@@ -2,9 +2,9 @@ use jack::{AudioIn, AudioOut, Client, Control, Port, ProcessHandler, ProcessScop
 use livi::{EmptyPortConnections, PortIndex};
 use ringbuf::{HeapCons, traits::Consumer};
 
-use crate::jack_client::{
+use crate::plugin_manager::{
   audio_plugins::{AudioCommand, AudioPlugin},
-  plugin_manager::AtomSequencePorts,
+  manager::AtomSequencePorts,
 };
 
 const INITIAL_ACTIVE_PLUGINS_CAPACITY: usize = 128;

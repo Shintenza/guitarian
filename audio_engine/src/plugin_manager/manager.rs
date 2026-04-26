@@ -2,11 +2,14 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use livi::event::LV2AtomSequence;
-use livi::{Features, Instance, World};
+use livi::{Features, World};
 use ringbuf::HeapProd;
 use ringbuf::traits::Producer;
 
-use crate::jack_client::audio_plugins::{AudioCommand, AudioPlugin, PluginMeta, PortConfig};
+use crate::plugin_manager::audio_plugins::{
+  AudioCommand, AudioPlugin, LoadPluginError, PluginMeta, PortConfig,
+};
+use crate::plugin_manager::utils::get_plugin_ports_state;
 
 pub struct PluginManager {
   world: World,
@@ -46,29 +49,23 @@ impl PluginManager {
     return AtomSequencePorts { seq_in, seq_out };
   }
 
-  pub fn load_plugin(&mut self, uri: &str) -> Option<Instance> {
-    let plugin = self.world.plugin_by_uri(uri)?;
-
-    let instance = unsafe {
-      plugin
-        .instantiate(self.features.clone(), self.sample_rate as f64)
-        .ok()?
+  pub fn load_plugin(&mut self, uri: &str) -> Result<(), LoadPluginError> {
+    let plugin = match self.world.plugin_by_uri(uri) {
+      Some(p) => p,
+      None => return Err(LoadPluginError::NotFound),
     };
 
-    let control_ports_count = plugin.port_counts().control_inputs;
-    let mut state: Vec<PortConfig> = Vec::with_capacity(control_ports_count);
+    let instance = unsafe {
+      match plugin.instantiate(self.features.clone(), self.sample_rate as f64) {
+        Ok(p) => p,
+        Err(_e) => return Err(LoadPluginError::InstantionFailed),
+      }
+    };
 
-    for control_port in plugin.ports_with_type(livi::PortType::ControlInput) {
-      let config = PortConfig {
-        index: control_port.index,
-        value: control_port.default_value,
-      };
-      state.push(config);
-    }
-    let id = self.plugin_id;
-
+    let state: Vec<PortConfig> = get_plugin_ports_state(&plugin);
     let state_arc = Arc::new(state);
 
+    let id = self.plugin_id;
     let audio_plugin = AudioPlugin {
       id,
       instance,
@@ -86,8 +83,8 @@ impl PluginManager {
     self.plugin_id += 1;
 
     let command = AudioCommand::LoadPlugin(audio_plugin);
-    self.producer.try_push(command);
+    self.producer.try_push(command).ok();
 
-    None
+    Ok(())
   }
 }

@@ -1,4 +1,5 @@
 mod jack_client;
+mod plugin_manager;
 
 use std::sync::{Arc, atomic::AtomicBool, atomic::Ordering};
 

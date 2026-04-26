@@ -3,10 +3,10 @@ use jack::{AsyncClient, AudioIn, AudioOut, Client, ClientOptions};
 use ringbuf::{HeapRb, traits::*};
 use std::env;
 
-use crate::jack_client::audio_plugins::AudioCommand;
 use crate::jack_client::audio_processor::AudioProcessor;
 use crate::jack_client::notification_handler::NotificationHandler;
-use crate::jack_client::plugin_manager::PluginManager;
+use crate::plugin_manager::audio_plugins::AudioCommand;
+use crate::plugin_manager::manager::PluginManager;
 
 struct AudioEngineInternals {
   client: Client,
@@ -76,7 +76,7 @@ impl AudioEngine {
   pub fn deactivate(&mut self) {
     let running_client = self.async_client.take();
 
-    match (running_client) {
+    match running_client {
       Some(client) => {
         let (client, notification_handler, processor) = client
           .deactivate()

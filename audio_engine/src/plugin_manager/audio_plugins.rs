@@ -23,3 +23,8 @@ pub enum AudioCommand {
   LoadPlugin(AudioPlugin),
   RemovePlugin(u32),
 }
+
+pub enum LoadPluginError {
+  NotFound,
+  InstantionFailed,
+}
