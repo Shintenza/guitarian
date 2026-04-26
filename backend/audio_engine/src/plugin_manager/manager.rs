@@ -7,7 +7,7 @@ use ringbuf::HeapProd;
 use ringbuf::traits::Producer;
 
 use crate::plugin_manager::audio_plugins::{
-  AudioCommand, AudioPlugin, LoadPluginError, PluginMeta, PortConfig,
+  AudioCommand, AudioPlugin, PluginActionError, PluginMeta, PortConfig,
 };
 use crate::plugin_manager::utils::get_plugin_ports_state;
 
@@ -49,16 +49,34 @@ impl PluginManager {
     return AtomSequencePorts { seq_in, seq_out };
   }
 
-  pub fn load_plugin(&mut self, uri: &str) -> Result<(), LoadPluginError> {
+  pub fn unload_plugin(&mut self, id: u32) -> Result<(), PluginActionError> {
+    let exists = self.plugin_register.contains_key(&id);
+
+    if !exists {
+      return Err(PluginActionError::NotFound);
+    }
+
+    let remove_command = AudioCommand::RemovePlugin(id);
+    self
+      .producer
+      .try_push(remove_command)
+      .map_err(|_| PluginActionError::QueueError)?;
+
+    self.plugin_register.remove(&id);
+
+    Ok(())
+  }
+
+  pub fn load_plugin(&mut self, uri: &str) -> Result<(), PluginActionError> {
     let plugin = match self.world.plugin_by_uri(uri) {
       Some(p) => p,
-      None => return Err(LoadPluginError::NotFound),
+      None => return Err(PluginActionError::NotFound),
     };
 
     let instance = unsafe {
       match plugin.instantiate(self.features.clone(), self.sample_rate as f64) {
         Ok(p) => p,
-        Err(_e) => return Err(LoadPluginError::InstantionFailed),
+        Err(_e) => return Err(PluginActionError::InstantionFailed),
       }
     };
 
@@ -83,7 +101,10 @@ impl PluginManager {
     self.plugin_id += 1;
 
     let command = AudioCommand::LoadPlugin(audio_plugin);
-    self.producer.try_push(command).ok();
+    self
+      .producer
+      .try_push(command)
+      .map_err(|_| PluginActionError::QueueError)?;
 
     Ok(())
   }

@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "audio_engine",
+    "server",
+    "shared",
+]
+resolver = "3"

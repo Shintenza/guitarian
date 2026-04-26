@@ -24,7 +24,8 @@ pub enum AudioCommand {
   RemovePlugin(u32),
 }
 
-pub enum LoadPluginError {
+pub enum PluginActionError {
   NotFound,
   InstantionFailed,
+  QueueError,
 }
