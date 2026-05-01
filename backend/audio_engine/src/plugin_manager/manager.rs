@@ -5,9 +5,10 @@ use livi::event::LV2AtomSequence;
 use livi::{Features, World};
 use ringbuf::HeapProd;
 use ringbuf::traits::Producer;
+use shared::data::PluginMetadata;
 
 use crate::plugin_manager::audio_plugins::{
-  AudioCommand, AudioPlugin, PluginActionError, PluginMeta, PortConfig,
+  AudioCommand, AudioPlugin, PluginActionError, PluginConfig, PortConfig,
 };
 use crate::plugin_manager::utils::get_plugin_ports_state;
 
@@ -15,7 +16,7 @@ pub struct PluginManager {
   world: World,
   sample_rate: u32,
   producer: HeapProd<AudioCommand>,
-  plugin_register: HashMap<u32, PluginMeta>,
+  plugin_register: HashMap<u32, PluginConfig>,
   features: Arc<Features>,
   plugin_id: u32,
 }
@@ -30,7 +31,14 @@ impl PluginManager {
     let world = livi::World::new();
     let features = world.build_features(livi::FeaturesBuilder::default());
     let plugin_id = 0;
-    let plugin_register: HashMap<u32, PluginMeta> = HashMap::new();
+    let plugin_register: HashMap<u32, PluginConfig> = HashMap::new();
+
+    for plugin in world.iter_plugins() {
+      let classes = plugin.classes().collect::<Vec<_>>();
+      let name = plugin.name();
+
+      println!("{} : {:?}", name, classes);
+    }
 
     PluginManager {
       world,
@@ -40,6 +48,28 @@ impl PluginManager {
       plugin_id,
       plugin_register,
     }
+  }
+
+  pub fn get_plugins(&self) -> Vec<PluginMetadata> {
+    let mut plugins: Vec<PluginMetadata> = Vec::new();
+
+    for plugin in self.world.iter_plugins() {
+      if plugin.is_instrument() {
+        continue;
+      }
+
+      let name = plugin.name();
+      let uri = plugin.uri();
+      let class = plugin.classes().nth(0).unwrap_or("UNKOWN");
+
+      plugins.push(PluginMetadata {
+        name,
+        uri,
+        class: class.to_string(),
+      });
+    }
+
+    plugins
   }
 
   pub fn create_atom_seq_ports(&self) -> AtomSequencePorts {
@@ -90,7 +120,7 @@ impl PluginManager {
       state: state_arc.clone(),
     };
 
-    let plugin_meta = PluginMeta {
+    let plugin_meta = PluginConfig {
       name: plugin.name(),
       id,
       state: state_arc.clone(),

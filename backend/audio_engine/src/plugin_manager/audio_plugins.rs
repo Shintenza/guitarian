@@ -7,7 +7,7 @@ pub struct PortConfig {
   pub value: f32,
 }
 
-pub struct PluginMeta {
+pub struct PluginConfig {
   pub id: u32,
   pub name: String,
   pub state: Arc<Vec<PortConfig>>,

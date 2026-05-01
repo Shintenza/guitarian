@@ -17,7 +17,7 @@ struct AudioEngineInternals {
 pub struct AudioEngine {
   internals: Option<AudioEngineInternals>,
   async_client: Option<AsyncClient<NotificationHandler, AudioProcessor>>,
-  plugin_manager: PluginManager,
+  plugin_manager: Option<PluginManager>,
 }
 
 const DEFAULT_NAME_SERVER_NAME: &str = "guitarian";
@@ -51,12 +51,12 @@ impl AudioEngine {
     Self {
       internals: Some(internals),
       async_client: None,
-      plugin_manager,
+      plugin_manager: Some(plugin_manager),
     }
   }
 
-  pub fn get_plugin_manager(&mut self) -> &mut PluginManager {
-    &mut self.plugin_manager
+  pub fn get_plugin_manager(&mut self) -> Option<PluginManager> {
+    self.plugin_manager.take()
   }
 
   pub fn run(&mut self) {

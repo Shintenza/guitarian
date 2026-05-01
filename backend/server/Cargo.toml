@@ -5,4 +5,7 @@ edition = "2024"
 
 [dependencies]
 axum = { version = "0.8.9", features = ["ws"] }
+
+tokio = { workspace = true }
+
 shared = { path = "../shared" }
