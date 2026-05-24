@@ -8,7 +8,9 @@ use crate::{jack_client::client::AudioEngine, message_handler::MessageHandler};
 
 #[tokio::main]
 async fn main() {
-  dotenvy::dotenv().ok();
+  dotenvy::from_filename("./.env").ok();
+  dotenvy::from_filename("../.env").ok();
+
   env_logger::init();
 
   let running = Arc::new(AtomicBool::new(true));

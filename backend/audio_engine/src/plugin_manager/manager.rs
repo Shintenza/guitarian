@@ -1,141 +1,61 @@
 use std::collections::HashMap;
-use std::sync::Arc;
-
-use livi::event::LV2AtomSequence;
-use livi::{Features, World};
 use ringbuf::HeapProd;
-use ringbuf::traits::Producer;
 use shared::data::PluginMetadata;
 
-use crate::plugin_manager::audio_plugins::{
-  AudioCommand, AudioPlugin, PluginActionError, PluginConfig, PortConfig,
-};
-use crate::plugin_manager::utils::get_plugin_ports_state;
+use crate::plugin_manager::audio_plugins::{AudioCommand, PluginActionError, PluginConfig};
+use crate::plugin_manager::plugin_chain::PluginChain;
+use crate::plugin_manager::plugin_repository::{LV2PluginRepository, PluginRepository};
 
 pub struct PluginManager {
-  world: World,
   sample_rate: u32,
-  producer: HeapProd<AudioCommand>,
-  plugin_register: HashMap<u32, PluginConfig>,
-  features: Arc<Features>,
-  plugin_id: u32,
-}
+  lv2_repository: LV2PluginRepository,
+  plugin_chain: PluginChain,
 
-pub struct AtomSequencePorts {
-  pub seq_in: LV2AtomSequence,
-  pub seq_out: LV2AtomSequence,
+  plugin_register: HashMap<u32, PluginConfig>,
+  plugin_id: u32,
 }
 
 impl PluginManager {
   pub fn new(sample_rate: u32, producer: HeapProd<AudioCommand>) -> Self {
-    let world = livi::World::new();
-    let features = world.build_features(livi::FeaturesBuilder::default());
     let plugin_id = 0;
     let plugin_register: HashMap<u32, PluginConfig> = HashMap::new();
-
-    for plugin in world.iter_plugins() {
-      let classes = plugin.classes().collect::<Vec<_>>();
-      let name = plugin.name();
-
-      println!("{} : {:?}", name, classes);
-    }
+    let lv2_repository = LV2PluginRepository::new(sample_rate);
+    let plugin_chain = PluginChain::new(producer);
 
     PluginManager {
-      world,
-      producer,
+      lv2_repository,
+      plugin_chain,
       sample_rate,
-      features,
       plugin_id,
       plugin_register,
     }
   }
 
   pub fn get_plugins(&self) -> Vec<PluginMetadata> {
-    let mut plugins: Vec<PluginMetadata> = Vec::new();
-
-    for plugin in self.world.iter_plugins() {
-      if plugin.is_instrument() {
-        continue;
-      }
-
-      let name = plugin.name();
-      let uri = plugin.uri();
-      let class = plugin.classes().nth(0).unwrap_or("UNKOWN");
-
-      plugins.push(PluginMetadata {
-        name,
-        uri,
-        class: class.to_string(),
-      });
-    }
-
+    let plugins = self.lv2_repository.get_all_plugins();
     plugins
   }
 
-  pub fn create_atom_seq_ports(&self) -> AtomSequencePorts {
-    let seq_in = LV2AtomSequence::new(&self.features, 1024);
-    let seq_out = LV2AtomSequence::new(&self.features, 1024);
-
-    return AtomSequencePorts { seq_in, seq_out };
+  pub fn set_plugin_port_value(&self, plugin_id: u32, port_id: u32, new_value: f32) {
+    self.plugin_chain.set_plugin_port_value(plugin_id, port_id, new_value);
   }
 
   pub fn unload_plugin(&mut self, id: u32) -> Result<(), PluginActionError> {
-    let exists = self.plugin_register.contains_key(&id);
-
-    if !exists {
-      return Err(PluginActionError::NotFound);
-    }
-
-    let remove_command = AudioCommand::RemovePlugin(id);
-    self
-      .producer
-      .try_push(remove_command)
-      .map_err(|_| PluginActionError::QueueError)?;
-
-    self.plugin_register.remove(&id);
-
+    self.plugin_chain.remove_plugin(id);
     Ok(())
   }
 
-  pub fn load_plugin(&mut self, uri: &str) -> Result<(), PluginActionError> {
-    let plugin = match self.world.plugin_by_uri(uri) {
-      Some(p) => p,
-      None => return Err(PluginActionError::NotFound),
-    };
+  pub fn load_plugin(&mut self, position: usize, uri: &str) -> Result<(), PluginActionError> {
+    let state = self
+      .lv2_repository
+      .get_plugin_default_port_values(uri)
+      .ok_or(PluginActionError::NotFound)?;
+    let plugin_instance = self
+      .lv2_repository
+      .get_plugin_instance(uri)
+      .ok_or(PluginActionError::NotFound)?;
 
-    let instance = unsafe {
-      match plugin.instantiate(self.features.clone(), self.sample_rate as f64) {
-        Ok(p) => p,
-        Err(_e) => return Err(PluginActionError::InstantionFailed),
-      }
-    };
-
-    let state: Vec<PortConfig> = get_plugin_ports_state(&plugin);
-    let state_arc = Arc::new(state);
-
-    let id = self.plugin_id;
-    let audio_plugin = AudioPlugin {
-      id,
-      instance,
-      state: state_arc.clone(),
-    };
-
-    let plugin_meta = PluginConfig {
-      name: plugin.name(),
-      id,
-      state: state_arc.clone(),
-    };
-
-    self.plugin_register.insert(id, plugin_meta);
-
-    self.plugin_id += 1;
-
-    let command = AudioCommand::LoadPlugin(audio_plugin);
-    self
-      .producer
-      .try_push(command)
-      .map_err(|_| PluginActionError::QueueError)?;
-
+    self.plugin_chain.add_plugin(position, plugin_instance, state);
     Ok(())
   }
 }

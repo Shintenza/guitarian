@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
+use bincode::{Decode, Encode};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Decode, Encode)]
 pub struct PluginMetadata {
   pub name: String,
   pub uri: String,

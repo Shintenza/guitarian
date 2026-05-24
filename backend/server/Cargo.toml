@@ -7,5 +7,8 @@ edition = "2024"
 axum = { version = "0.8.9", features = ["ws"] }
 
 tokio = { workspace = true }
+zeromq = { workspace = true }
+dotenvy = { workspace = true }
+bincode = { workspace = true }
 
 shared = { path = "../shared" }

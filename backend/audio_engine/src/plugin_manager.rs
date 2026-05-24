@@ -1,3 +1,5 @@
 pub mod audio_plugins;
 pub mod manager;
-mod utils;
+pub mod plugin_instance;
+mod plugin_repository;
+mod plugin_chain;

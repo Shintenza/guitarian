@@ -4,17 +4,18 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-dotenvy = "0.15.7"
 jack = "0.13"
 livi = "0.7.5"
 ringbuf = "0.4.8"
 ctrlc = "3.5"
 log = "0.4.29"
 env_logger = "0.11.10"
+atomic_float = "1.1.0"
 
 tokio = { workspace = true }
 zeromq = { workspace = true }
 serde = { workspace = true }
 bincode = { workspace = true }
+dotenvy = { workspace = true }
 
 shared = { path = "../shared" }

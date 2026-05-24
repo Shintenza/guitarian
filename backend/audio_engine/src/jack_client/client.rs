@@ -37,9 +37,8 @@ impl AudioEngine {
     let sample_rate = client.sample_rate();
 
     let plugin_manager = PluginManager::new(sample_rate, producer);
-    let atom_seq_ports = plugin_manager.create_atom_seq_ports();
 
-    let processor = AudioProcessor::new(audio_in, audio_out, atom_seq_ports, consumer);
+    let processor = AudioProcessor::new(audio_in, audio_out, consumer);
     let notification_handler = NotificationHandler;
 
     let internals = AudioEngineInternals {
