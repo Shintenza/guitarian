@@ -4,14 +4,17 @@ use atomic_float::AtomicF32;
 use livi::{Features, World, event::LV2AtomSequence};
 use shared::data::PluginMetadata;
 
-use crate::plugin_manager::{audio_plugins::{ PortConfig}, plugin_instance::{
-  AtomSequencePorts, LV2PluginInstance, PluginInstance,
-}};
+use crate::plugin_manager::{
+  plugin_instance::{AtomSequencePorts, LV2PluginInstance, PluginInstance},
+  types::PortConfig,
+  utils::{get_lv2_plugin_controls_metadata, get_lv2_plugin_metadata},
+};
 
 pub trait PluginRepository {
   fn get_all_plugins(&self) -> Vec<PluginMetadata>;
   fn get_plugin_instance(&self, plugin_id: &str) -> Option<impl PluginInstance>;
   fn get_plugin_default_port_values(&self, plugin_id: &str) -> Option<Vec<PortConfig>>;
+  fn get_plugin_metadata(&self, plugin_id: &str) -> Option<PluginMetadata>;
 }
 
 pub struct LV2PluginRepository {
@@ -34,6 +37,11 @@ impl LV2PluginRepository {
 }
 
 impl PluginRepository for LV2PluginRepository {
+  fn get_plugin_metadata(&self, plugin_id: &str) -> Option<PluginMetadata> {
+    let plugin = self.world.plugin_by_uri(&plugin_id)?;
+    Some(get_lv2_plugin_metadata(&plugin))
+  }
+
   fn get_all_plugins(&self) -> Vec<PluginMetadata> {
     let mut plugins: Vec<PluginMetadata> = Vec::new();
 
@@ -42,15 +50,8 @@ impl PluginRepository for LV2PluginRepository {
         continue;
       }
 
-      let name = plugin.name();
-      let uri = plugin.uri();
-      let class = plugin.classes().nth(0).unwrap_or("UNKOWN");
-
-      plugins.push(PluginMetadata {
-        name,
-        uri,
-        class: class.to_string(),
-      });
+      let plugin_metadata = get_lv2_plugin_metadata(&plugin);
+      plugins.push(plugin_metadata);
     }
 
     plugins
@@ -79,10 +80,12 @@ impl PluginRepository for LV2PluginRepository {
 
     let mut state: Vec<PortConfig> = Vec::with_capacity(number_of_ports.control_inputs);
 
-    for control_port in plugin.ports_with_type(livi::PortType::ControlInput) {
+    let controls_metadata = get_lv2_plugin_controls_metadata(&plugin);
+
+    for control_port in controls_metadata {
       let config = PortConfig {
-        id: control_port.index.0,
-        value: AtomicF32::new(control_port.default_value)
+        id: control_port.id as usize,
+        value: AtomicF32::new(control_port.default_value),
       };
       state.push(config);
     }

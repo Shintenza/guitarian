@@ -119,6 +119,7 @@ dependencies = [
  "serde",
  "shared",
  "tokio",
+ "tokio-util",
  "zeromq",
 ]
 

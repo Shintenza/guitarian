@@ -10,7 +10,6 @@ pub struct PluginManager {
   sample_rate: u32,
   lv2_repository: LV2PluginRepository,
   plugin_chain: PluginChain,
-
   plugin_register: HashMap<u32, PluginConfig>,
   plugin_id: u32,
 }
