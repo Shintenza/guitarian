@@ -6,7 +6,10 @@ use shared::{
 use tokio_util::sync::CancellationToken;
 use zeromq::{PullSocket, RepSocket, Socket, SocketRecv, SocketSend};
 
-use crate::{decode_msg, plugin_manager::manager::PluginManager};
+use crate::{
+  decode_msg, message_handler::message_handler_controller::MessageHandlerController,
+  plugin_manager::manager::PluginManager,
+};
 
 pub struct MessageHandler {
   cancel_token: CancellationToken,
@@ -21,8 +24,8 @@ impl MessageHandler {
     }
   }
 
-  pub fn shut_down(&mut self) {
-    self.cancel_token.cancel();
+  pub fn get_controller(&mut self) -> MessageHandlerController {
+    MessageHandlerController::new(self.cancel_token.clone())
   }
 
   async fn handle_requests(&self, socket: &mut RepSocket, request: RequestCommand) {
@@ -30,6 +33,12 @@ impl MessageHandler {
       RequestCommand::GetAvailablePlugins => {
         let plugins_vec = self.plugin_manager.get_plugins();
         let data = RequestCommandResponse::AvailablePlugins(plugins_vec);
+        let encoded = encode_to_vec(data, config::standard()).unwrap();
+        socket.send(encoded.into()).await.ok();
+      }
+      RequestCommand::GetCurrentState => {
+        let current_state = self.plugin_manager.get_current_chain_state();
+        let data = RequestCommandResponse::CurrentState(current_state);
         let encoded = encode_to_vec(data, config::standard()).unwrap();
         socket.send(encoded.into()).await.ok();
       }

@@ -10,8 +10,10 @@ pub struct PortConfig {
   pub value: AtomicF32,
 }
 
-pub struct PluginConfig {
+#[derive(Clone)]
+pub struct InstanceConfig {
   pub id: u32,
+  pub plugin_uri: String,
   pub state: Arc<Vec<PortConfig>>,
 }
 

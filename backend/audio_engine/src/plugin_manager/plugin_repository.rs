@@ -12,9 +12,9 @@ use crate::plugin_manager::{
 
 pub trait PluginRepository {
   fn get_all_plugins(&self) -> Vec<PluginMetadata>;
-  fn get_plugin_instance(&self, plugin_id: &str) -> Option<impl PluginInstance>;
-  fn get_plugin_default_port_values(&self, plugin_id: &str) -> Option<Vec<PortConfig>>;
-  fn get_plugin_metadata(&self, plugin_id: &str) -> Option<PluginMetadata>;
+  fn get_plugin_instance(&self, plugin_uri: &str) -> Option<impl PluginInstance>;
+  fn get_plugin_default_port_values(&self, plugin_uri: &str) -> Option<Vec<PortConfig>>;
+  fn get_plugin_metadata(&self, plugin_uri: &str) -> Option<PluginMetadata>;
 }
 
 pub struct LV2PluginRepository {
@@ -37,8 +37,8 @@ impl LV2PluginRepository {
 }
 
 impl PluginRepository for LV2PluginRepository {
-  fn get_plugin_metadata(&self, plugin_id: &str) -> Option<PluginMetadata> {
-    let plugin = self.world.plugin_by_uri(&plugin_id)?;
+  fn get_plugin_metadata(&self, plugin_uri: &str) -> Option<PluginMetadata> {
+    let plugin = self.world.plugin_by_uri(&plugin_uri)?;
     Some(get_lv2_plugin_metadata(&plugin))
   }
 
@@ -57,8 +57,8 @@ impl PluginRepository for LV2PluginRepository {
     plugins
   }
 
-  fn get_plugin_instance(&self, plugin_id: &str) -> Option<impl PluginInstance> {
-    let plugin = self.world.plugin_by_uri(&plugin_id)?;
+  fn get_plugin_instance(&self, plugin_uri: &str) -> Option<impl PluginInstance> {
+    let plugin = self.world.plugin_by_uri(&plugin_uri)?;
 
     let instance = unsafe {
       plugin
@@ -74,8 +74,8 @@ impl PluginRepository for LV2PluginRepository {
     Some(plugin_instance)
   }
 
-  fn get_plugin_default_port_values(&self, plugin_id: &str) -> Option<Vec<PortConfig>> {
-    let plugin = self.world.plugin_by_uri(&plugin_id)?;
+  fn get_plugin_default_port_values(&self, plugin_uri: &str) -> Option<Vec<PortConfig>> {
+    let plugin = self.world.plugin_by_uri(&plugin_uri)?;
     let number_of_ports = plugin.port_counts();
 
     let mut state: Vec<PortConfig> = Vec::with_capacity(number_of_ports.control_inputs);

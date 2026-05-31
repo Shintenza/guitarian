@@ -2,19 +2,19 @@ use ringbuf::{HeapProd, traits::Producer};
 use std::sync::{Arc, atomic::Ordering};
 
 use crate::plugin_manager::{
-  audio_plugins::{AudioCommand, PluginConfig, PluginInstanceWithId, PortConfig},
+  types::{AudioCommand, InstanceConfig, PluginInstanceWithId, PortConfig},
   plugin_instance::PluginInstance,
 };
 
 pub struct PluginChain {
   producer: HeapProd<AudioCommand>,
-  chain: Vec<PluginConfig>,
+  chain: Vec<InstanceConfig>,
   plugin_id: u32,
 }
 
 impl PluginChain {
   pub fn new(producer: HeapProd<AudioCommand>) -> Self {
-    let chain: Vec<PluginConfig> = Vec::new();
+    let chain: Vec<InstanceConfig> = Vec::new();
     let plugin_id = 0;
     Self {
       producer,
@@ -23,18 +23,24 @@ impl PluginChain {
     }
   }
 
+  pub fn get_current_chain(&self) -> Vec<InstanceConfig> {
+    return self.chain.clone();
+  }
+
   pub fn add_plugin(
     &mut self,
     index: usize,
     instance: impl PluginInstance,
     state: Vec<PortConfig>,
+    plugin_uri: &str,
   ) {
     let state_arc = Arc::new(state);
     let safe_index = index.min(self.chain.len());
 
-    let plugin_meta = PluginConfig {
+    let plugin_meta = InstanceConfig {
       id: self.plugin_id,
       state: state_arc.clone(),
+      plugin_uri: plugin_uri.to_string()
     };
 
     let command = AudioCommand::AddPlugin(

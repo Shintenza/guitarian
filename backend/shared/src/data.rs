@@ -16,3 +16,16 @@ pub struct PluginMetadata {
   pub class: String,
   pub controls_metadata: Vec<ControlMetadata>,
 }
+
+#[derive(Decode, Encode)]
+pub struct ControlState {
+  pub id: u16,
+  pub value: f32
+}
+
+#[derive(Decode, Encode)]
+pub struct ChainItem {
+  pub id: u16,
+  pub metadata: PluginMetadata,
+  pub controls_state: Vec<ControlState> 
+}

@@ -1,15 +1,17 @@
 use bincode::{Decode, Encode};
 
-use crate::data::PluginMetadata;
+use crate::data::{ChainItem, PluginMetadata};
 
 #[derive(Encode, Decode)]
 pub enum RequestCommand {
   GetAvailablePlugins,
+  GetCurrentState
 }
 
 #[derive(Encode, Decode)]
 pub enum RequestCommandResponse {
   AvailablePlugins(Vec<PluginMetadata>),
+  CurrentState(Vec<ChainItem>),
   Error(String),
 }
 

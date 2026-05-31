@@ -2,7 +2,7 @@ use jack::{AudioIn, AudioOut, Client, Control, Port, ProcessHandler, ProcessScop
 use ringbuf::{HeapCons, traits::Consumer};
 
 use crate::plugin_manager::{
-  audio_plugins::{AudioCommand, PluginInstanceWithId},
+  types::{AudioCommand, PluginInstanceWithId},
 };
 
 const INITIAL_ACTIVE_PLUGINS_CAPACITY: usize = 128;

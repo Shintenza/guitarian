@@ -5,7 +5,7 @@ use std::env;
 
 use crate::jack_client::audio_processor::AudioProcessor;
 use crate::jack_client::notification_handler::NotificationHandler;
-use crate::plugin_manager::audio_plugins::AudioCommand;
+use crate::plugin_manager::types::AudioCommand;
 use crate::plugin_manager::manager::PluginManager;
 
 struct AudioEngineInternals {
