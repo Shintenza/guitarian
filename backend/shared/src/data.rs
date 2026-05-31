@@ -1,6 +1,7 @@
 use bincode::{Decode, Encode};
+use serde::{Deserialize, Serialize};
 
-#[derive(Decode, Encode)]
+#[derive(Decode, Encode, Serialize, Deserialize)]
 pub struct ControlMetadata {
   pub id: u16,
   pub name: String,
@@ -9,7 +10,7 @@ pub struct ControlMetadata {
   pub max_value: f32,
 }
 
-#[derive(Decode, Encode)]
+#[derive(Decode, Encode, Serialize, Deserialize)]
 pub struct PluginMetadata {
   pub name: String,
   pub uri: String,

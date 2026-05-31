@@ -2,8 +2,8 @@ use ringbuf::{HeapProd, traits::Producer};
 use std::sync::{Arc, atomic::Ordering};
 
 use crate::plugin_manager::{
-  types::{AudioCommand, InstanceConfig, PluginInstanceWithId, PortConfig},
   plugin_instance::PluginInstance,
+  types::{AudioCommand, InstanceConfig, PluginInstanceWithId, PortConfig},
 };
 
 pub struct PluginChain {
@@ -33,14 +33,15 @@ impl PluginChain {
     instance: impl PluginInstance,
     state: Vec<PortConfig>,
     plugin_uri: &str,
-  ) {
+  ) -> InstanceConfig {
     let state_arc = Arc::new(state);
     let safe_index = index.min(self.chain.len());
+    let plugin_id = self.plugin_id;
 
     let plugin_meta = InstanceConfig {
-      id: self.plugin_id,
+      id: plugin_id,
       state: state_arc.clone(),
-      plugin_uri: plugin_uri.to_string()
+      plugin_uri: plugin_uri.to_string(),
     };
 
     let command = AudioCommand::AddPlugin(
@@ -52,7 +53,10 @@ impl PluginChain {
     );
 
     self.producer.try_push(command);
-    self.chain.insert(safe_index, plugin_meta);
+    self.chain.insert(safe_index, plugin_meta.clone());
+    self.plugin_id += 1;
+
+    plugin_meta
   }
 
   pub fn remove_plugin(&mut self, plugin_id: u32) {
@@ -66,7 +70,7 @@ impl PluginChain {
 
   pub fn set_plugin_port_value(&self, plugin_id: u32, port_id: u32, new_value: f32) {
     let Some(plugin) = self.chain.iter().find(|plugin| plugin.id == plugin_id) else {
-      return
+      return;
     };
 
     let Some(port) = plugin.state.iter().find(|item| item.id == port_id as usize) else {

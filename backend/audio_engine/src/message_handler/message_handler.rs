@@ -28,21 +28,33 @@ impl MessageHandler {
     MessageHandlerController::new(self.cancel_token.clone())
   }
 
-  async fn handle_requests(&self, socket: &mut RepSocket, request: RequestCommand) {
+  async fn handle_requests(&mut self, socket: &mut RepSocket, request: RequestCommand) {
+    let response: RequestCommandResponse;
+
     match request {
       RequestCommand::GetAvailablePlugins => {
         let plugins_vec = self.plugin_manager.get_plugins();
-        let data = RequestCommandResponse::AvailablePlugins(plugins_vec);
-        let encoded = encode_to_vec(data, config::standard()).unwrap();
-        socket.send(encoded.into()).await.ok();
+        response = RequestCommandResponse::AvailablePlugins(plugins_vec);
       }
       RequestCommand::GetCurrentState => {
         let current_state = self.plugin_manager.get_current_chain_state();
-        let data = RequestCommandResponse::CurrentState(current_state);
-        let encoded = encode_to_vec(data, config::standard()).unwrap();
-        socket.send(encoded.into()).await.ok();
+        response = RequestCommandResponse::CurrentState(current_state);
+      }
+      RequestCommand::LoadPlugin(plugin_uri, position) => {
+        let load_result = self.plugin_manager.load_plugin(position, &plugin_uri);
+        match load_result {
+          Ok(chain_item) => {
+            response = RequestCommandResponse::LoadedPlugin(chain_item);
+          }
+          Err(_e) => {
+            response = RequestCommandResponse::Error("failed to load plugin".to_string());
+          }
+        }
       }
     }
+
+    let encoded = encode_to_vec(response, config::standard()).unwrap();
+    socket.send(encoded.into()).await.ok();
   }
 
   async fn handle_messages(&self, _socket: &mut PullSocket) {}
@@ -66,7 +78,7 @@ impl MessageHandler {
       tokio::select! {
         rep_msg = rep_socket.recv() => {
           let decoded: RequestCommand = decode_msg!(rep_msg);
-          self.handle_requests(&mut rep_socket, decoded);
+          self.handle_requests(&mut rep_socket, decoded).await;
         }
         _pull_msg = pull_socket.recv()  => {
 

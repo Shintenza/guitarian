@@ -3,7 +3,7 @@ use std::sync::Arc;
 use bincode::{config, decode_from_slice, encode_to_vec};
 use shared::{
   commands::{CommandWithResponse, RequestCommandError, RequestCommandResponse},
-  utils::get_rep_socket_address,
+  utils::get_sockets_endpoints,
 };
 use tokio::sync::Mutex;
 use zeromq::{ReqSocket, Socket, SocketRecv, SocketSend};
@@ -23,11 +23,11 @@ impl EngineClient {
   }
 
   pub async fn connect(&mut self) {
-    let endpoint = get_rep_socket_address();
+    let (rep_endpoint, _pull_endpoint) = get_sockets_endpoints();
     let mut socket = self.req_socket.lock().await;
 
     socket
-      .connect(&endpoint)
+      .connect(&rep_endpoint)
       .await
       .expect("failed to connect with the rep socket");
   }

@@ -5,13 +5,15 @@ use crate::data::{ChainItem, PluginMetadata};
 #[derive(Encode, Decode)]
 pub enum RequestCommand {
   GetAvailablePlugins,
-  GetCurrentState
+  GetCurrentState,
+  LoadPlugin(String, usize)
 }
 
 #[derive(Encode, Decode)]
 pub enum RequestCommandResponse {
   AvailablePlugins(Vec<PluginMetadata>),
   CurrentState(Vec<ChainItem>),
+  LoadedPlugin(ChainItem),
   Error(String),
 }
 

@@ -23,7 +23,10 @@ pub fn get_lv2_plugin_metadata(plugin: &Plugin) -> PluginMetadata {
   PluginMetadata {
     name: plugin.name(),
     uri: plugin.uri(),
-    class: plugin.classes().nth(0).unwrap_or("UNKOWN").to_string(),
+    class: {
+      let name = plugin.classes().nth(0).unwrap_or("UNKNOWN");
+      name.strip_suffix(" Plugin").unwrap_or(name).to_string()
+    },
     controls_metadata,
   }
 }
