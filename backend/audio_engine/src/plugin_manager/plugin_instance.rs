@@ -1,8 +1,8 @@
-use std::sync::Arc;
+use std::sync::{Arc, atomic::Ordering};
 
-use livi::{EmptyPortConnections, Instance, event::LV2AtomSequence};
+use livi::{EmptyPortConnections, Instance, PortIndex, event::LV2AtomSequence};
 
-use crate::plugin_manager::audio_plugins::PortConfig;
+use crate::plugin_manager::types::PortConfig;
 
 pub trait PluginInstance: Send + 'static {
   fn process(&mut self, input_port: &[f32], output_port: &mut [f32], n_frames: usize);
@@ -28,6 +28,12 @@ impl PluginInstance for LV2PluginInstance {
       .with_atom_sequence_inputs(std::iter::once(&self.atom_seq_ports.seq_in))
       .with_atom_sequence_outputs(std::iter::once(&mut self.atom_seq_ports.seq_out));
 
+    if let Some(ports) = &self.port_values {
+      for port in ports.iter() {
+        self.instance.set_control_input(PortIndex(port.id), port.value.load(Ordering::Relaxed));
+      }
+    }
+    
     unsafe {
       self
         .instance
