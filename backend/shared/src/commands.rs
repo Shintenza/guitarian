@@ -10,6 +10,11 @@ pub enum RequestCommand {
 }
 
 #[derive(Encode, Decode)]
+pub enum PushCommand {
+  SetParam(u32, u32, f32)
+}
+
+#[derive(Encode, Decode)]
 pub enum RequestCommandResponse {
   AvailablePlugins(Vec<PluginMetadata>),
   CurrentState(Vec<ChainItem>),

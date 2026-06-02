@@ -1,6 +1,6 @@
 use bincode::{config, encode_to_vec};
 use shared::{
-  commands::{RequestCommand, RequestCommandResponse},
+  commands::{PushCommand, RequestCommand, RequestCommandResponse},
   utils::get_sockets_endpoints,
 };
 use tokio_util::sync::CancellationToken;
@@ -57,7 +57,13 @@ impl MessageHandler {
     socket.send(encoded.into()).await.ok();
   }
 
-  async fn handle_messages(&self, _socket: &mut PullSocket) {}
+  async fn handle_messages(&self, command: PushCommand) {
+    match command {
+      PushCommand::SetParam(plugin_id, port_id, new_value) => {
+        self.plugin_manager.set_plugin_port_value(plugin_id, port_id, new_value);
+      }
+    }
+  }
 
   pub async fn listen(&mut self) {
     let mut rep_socket = RepSocket::new();
@@ -80,8 +86,9 @@ impl MessageHandler {
           let decoded: RequestCommand = decode_msg!(rep_msg);
           self.handle_requests(&mut rep_socket, decoded).await;
         }
-        _pull_msg = pull_socket.recv()  => {
-
+        pull_msg = pull_socket.recv()  => {
+          let decoded: PushCommand = decode_msg!(pull_msg);
+          self.handle_messages(decoded).await;
         }
         _ = self.cancel_token.cancelled() => {
           break;
