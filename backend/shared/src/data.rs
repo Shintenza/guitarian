@@ -21,12 +21,12 @@ pub struct PluginMetadata {
 #[derive(Decode, Encode)]
 pub struct ControlState {
   pub id: u16,
-  pub value: f32
+  pub value: f32,
 }
 
 #[derive(Decode, Encode)]
 pub struct ChainItem {
   pub id: u16,
   pub metadata: PluginMetadata,
-  pub controls_state: Vec<ControlState> 
+  pub controls_state: Vec<ControlState>,
 }
