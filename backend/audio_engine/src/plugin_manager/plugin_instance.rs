@@ -24,9 +24,9 @@ impl PluginInstance for LV2PluginInstance {
   fn process(&mut self, input_port: &[f32], output_port: &mut [f32], n_frames: usize) {
     let ports = EmptyPortConnections::new()
       .with_audio_inputs(std::iter::once(input_port))
-      .with_audio_outputs(std::iter::once(&mut *output_port))
-      .with_atom_sequence_inputs(std::iter::once(&self.atom_seq_ports.seq_in))
-      .with_atom_sequence_outputs(std::iter::once(&mut self.atom_seq_ports.seq_out));
+      .with_audio_outputs(std::iter::once(&mut *output_port));
+      // .with_atom_sequence_inputs(std::iter::once(&self.atom_seq_ports.seq_in))
+      // .with_atom_sequence_outputs(std::iter::once(&mut self.atom_seq_ports.seq_out));
 
     if let Some(ports) = &self.port_values {
       for port in ports.iter() {

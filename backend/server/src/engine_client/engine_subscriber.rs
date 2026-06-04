@@ -21,10 +21,13 @@ impl EngineSubscriber {
   pub async fn subscribe(&mut self) {
     prepare_connect_endpoint(&self.endpoint);
     self.socket.connect(&self.endpoint).await.expect("faied to connect with the pub socket");
+    self.socket.subscribe("").await;
   }
 
   pub async fn recv(&mut self) -> Option<StateChangeEvent> {
-    let zmq_message = self.socket.recv().await.ok()?;
+    let zmq_message = self.socket.recv().await.inspect_err(|e| {
+      eprintln!("failed to recv {}", e);
+    }).ok()?;
 
     let frame_bytes = zmq_message.get(0)?;
 

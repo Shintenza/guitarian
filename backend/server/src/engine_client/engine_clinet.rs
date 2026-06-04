@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bincode::{config, decode_from_slice, encode_to_vec};
 use shared::{
-  commands::{ RequestCommand, RequestCommandError, RequestCommandResponse},
+  commands::{PushCommand, RequestCommand, RequestCommandError, RequestCommandResponse},
   data::{ChainItem, PluginMetadata},
   utils::{get_sockets_endpoints, prepare_connect_endpoint},
 };
@@ -52,6 +52,7 @@ impl EngineClient {
 
     subscriber
   }
+
   async fn send_raw(
     &self,
     command: RequestCommand,
@@ -104,5 +105,12 @@ impl EngineClient {
     };
 
     Ok(data)
+  }
+
+  pub async fn set_plugin_param(&self, plugin_id: u32, port_id: u32, new_value: f32) {
+    let command = PushCommand::SetParam(plugin_id, port_id, new_value);
+    let req_bytes = encode_to_vec(command, config::standard()).unwrap();
+    let mut socket = self.push_socket.lock().await;
+    socket.send(req_bytes.into()).await;
   }
 }
