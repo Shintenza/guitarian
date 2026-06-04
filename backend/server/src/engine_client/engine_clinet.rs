@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use bincode::{config, decode_from_slice, encode_to_vec};
 use shared::{
-  commands::{CommandWithResponse, RequestCommandError, RequestCommandResponse},
+  commands::{ RequestCommand, RequestCommandError, RequestCommandResponse},
+  data::{ChainItem, PluginMetadata},
   utils::{get_sockets_endpoints, prepare_connect_endpoint},
 };
 use tokio::sync::Mutex;
@@ -51,17 +52,15 @@ impl EngineClient {
 
     subscriber
   }
-
-  pub async fn send_request_command<C: CommandWithResponse>(
+  async fn send_raw(
     &self,
-    command: C,
-  ) -> Result<C::Response, RequestCommandError> {
+    command: RequestCommand,
+  ) -> Result<RequestCommandResponse, RequestCommandError> {
     let config = config::standard();
     let mut socket = self.req_socket.lock().await;
 
-    let req_command = command.into_request();
     let req_bytes =
-      encode_to_vec(req_command, config).map_err(|_| RequestCommandError::DataFormatError)?;
+      encode_to_vec(command, config).map_err(|_| RequestCommandError::DataFormatError)?;
 
     socket
       .send(req_bytes.into())
@@ -72,15 +71,38 @@ impl EngineClient {
       .recv()
       .await
       .map_err(|_| RequestCommandError::ConnectionError)?;
-
     let response_bytes = received_message
       .get(0)
       .ok_or(RequestCommandError::DataFormatError)?;
 
-    let (decoded_response, _len): (RequestCommandResponse, usize) =
-      decode_from_slice(response_bytes, config)
-        .map_err(|_| RequestCommandError::DataFormatError)?;
+    let (decoded_response, _) = decode_from_slice(response_bytes, config)
+      .map_err(|_| RequestCommandError::DataFormatError)?;
 
-    C::extract_response(decoded_response)
+    Ok(decoded_response)
+  }
+
+  pub async fn get_available_plugins(&self) -> Result<Vec<PluginMetadata>, RequestCommandError> {
+    let response = self.send_raw(RequestCommand::GetAvailablePlugins).await?;
+    let RequestCommandResponse::AvailablePlugins(data) = response else {
+      return Err(RequestCommandError::DataFormatError);
+    };
+
+    Ok(data)
+  }
+
+  pub async fn load_plugin(
+    &self,
+    uri: String,
+    position: usize,
+  ) -> Result<ChainItem, RequestCommandError> {
+    let response = self
+      .send_raw(RequestCommand::LoadPlugin(uri, position))
+      .await?;
+
+    let RequestCommandResponse::LoadedPlugin(data) = response else {
+      return Err(RequestCommandError::DataFormatError);
+    };
+
+    Ok(data)
   }
 }

@@ -5,25 +5,38 @@ use axum::{
   response::Response,
 };
 use futures::stream::StreamExt;
-use shared::commands::GetAvailablePlugins;
 
 use crate::{
-  context::AppContext, engine_client::engine_clinet::EngineClient,
-  models::dto::plugins::ListPluginsResponse,
+  context::AppContext,
+  engine_client::engine_clinet::EngineClient,
+  models::dto::plugins::{AddPluginRequest, AddPluginResponse, ListPluginsResponse},
 };
 
 pub async fn list_plugins(
   State(ctx): State<AppContext>,
 ) -> Result<Json<ListPluginsResponse>, StatusCode> {
-  match ctx
-    .engine_client
-    .send_request_command(GetAvailablePlugins)
-    .await
-  {
+  match ctx.engine_client.get_available_plugins().await {
     Ok(plugins) => {
       let _plugins_len = plugins.len();
       let plugins_response = ListPluginsResponse { plugins };
       Ok(Json(plugins_response))
+    }
+    Err(_e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+  }
+}
+
+pub async fn add_plugin(
+  State(ctx): State<AppContext>,
+  Json(payload): Json<AddPluginRequest>,
+) -> Result<Json<AddPluginResponse>, StatusCode> {
+  match ctx
+    .engine_client
+    .load_plugin(payload.plugin_uri, payload.position as usize)
+    .await
+  {
+    Ok(plugin) => {
+      let response = AddPluginResponse { plugin };
+      Ok(Json(response))
     }
     Err(_e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
   }
@@ -41,9 +54,7 @@ pub async fn ws_hanlder(mut socket: WebSocket, ctx: AppContext) {
   tokio::spawn(async move {
     subscriber.subscribe().await;
 
-    while let Some(event) = subscriber.recv().await {
-        
-    }
+    while let Some(event) = subscriber.recv().await {}
   });
 
   tokio::spawn(async move {});

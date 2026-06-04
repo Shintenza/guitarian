@@ -1,8 +1,6 @@
 use bincode::{config, encode_to_vec};
 use shared::{
-  commands::{
-    ParamChangedPayload, PushCommand, RequestCommand, RequestCommandResponse, StateChangeEvent,
-  },
+  commands::{ParamChangedPayload, PushCommand, RequestCommand, RequestCommandResponse, StateChangeEvent},
   utils::{get_sockets_endpoints, prepare_bind_endpoint},
 };
 use tokio::{

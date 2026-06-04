@@ -6,12 +6,12 @@ use crate::data::{ChainItem, PluginMetadata};
 pub enum RequestCommand {
   GetAvailablePlugins,
   GetCurrentState,
-  LoadPlugin(String, usize),
+  LoadPlugin(String, usize)
 }
 
 #[derive(Encode, Decode)]
 pub enum PushCommand {
-  SetParam(u32, u32, f32),
+  SetParam(u32, u32, f32)
 }
 
 #[derive(Encode, Decode)]
@@ -24,46 +24,14 @@ pub enum RequestCommandResponse {
 
 pub enum RequestCommandError {
   DataFormatError,
-  ConnectionError,
+  ConnectionError
 }
 
 pub trait CommandWithResponse {
   type Response;
   fn into_request(self) -> RequestCommand;
-  fn extract_response(
-    response: RequestCommandResponse,
-  ) -> Result<Self::Response, RequestCommandError>;
+  fn extract_response(response: RequestCommandResponse) -> Result<Self::Response, RequestCommandError>;
 }
-
-macro_rules! impl_command {
-  ($cmd_name:ident, $req_variant:ident, $resp_variant:ident, $resp_type:ty) => {
-    pub struct $cmd_name;
-    impl CommandWithResponse for $cmd_name {
-      type Response = $resp_type;
-
-      fn into_request(self) -> RequestCommand {
-        RequestCommand::$req_variant
-      }
-
-      fn extract_response(
-        response: RequestCommandResponse,
-      ) -> Result<Self::Response, RequestCommandError> {
-        match response {
-          RequestCommandResponse::$resp_variant(data) => Ok(data),
-          RequestCommandResponse::Error(_err) => Err(RequestCommandError::ConnectionError),
-          _ => Err(RequestCommandError::DataFormatError),
-        }
-      }
-    }
-  };
-}
-
-impl_command!(
-  GetAvailablePlugins,
-  GetAvailablePlugins,
-  AvailablePlugins,
-  Vec<PluginMetadata>
-);
 
 #[derive(Encode, Decode)]
 pub struct ParamChangedPayload {
@@ -75,5 +43,6 @@ pub struct ParamChangedPayload {
 #[derive(Encode, Decode)]
 pub enum StateChangeEvent {
   PluginLoaded,
-  ParamChanged(ParamChangedPayload),
+  ParamChanged(ParamChangedPayload)
 }
+

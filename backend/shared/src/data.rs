@@ -18,13 +18,13 @@ pub struct PluginMetadata {
   pub controls_metadata: Vec<ControlMetadata>,
 }
 
-#[derive(Decode, Encode)]
+#[derive(Decode, Encode, Serialize, Deserialize)]
 pub struct ControlState {
   pub id: u16,
   pub value: f32,
 }
 
-#[derive(Decode, Encode)]
+#[derive(Decode, Encode, Serialize, Deserialize)]
 pub struct ChainItem {
   pub id: u16,
   pub metadata: PluginMetadata,
