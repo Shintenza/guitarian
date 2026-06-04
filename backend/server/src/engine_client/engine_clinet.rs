@@ -3,33 +3,53 @@ use std::sync::Arc;
 use bincode::{config, decode_from_slice, encode_to_vec};
 use shared::{
   commands::{CommandWithResponse, RequestCommandError, RequestCommandResponse},
-  utils::get_sockets_endpoints,
+  utils::{get_sockets_endpoints, prepare_connect_endpoint},
 };
 use tokio::sync::Mutex;
-use zeromq::{ReqSocket, Socket, SocketRecv, SocketSend};
+use zeromq::{PushSocket, ReqSocket, Socket, SocketRecv, SocketSend};
+
+use crate::engine_client::engine_subscriber::EngineSubscriber;
 
 #[derive(Clone)]
 pub struct EngineClient {
   req_socket: Arc<Mutex<ReqSocket>>,
+  push_socket: Arc<Mutex<PushSocket>>,
 }
 
 impl EngineClient {
   pub fn new() -> Self {
-    let socket = ReqSocket::new();
+    let req_socket = ReqSocket::new();
+    let push_socket = PushSocket::new();
 
     Self {
-      req_socket: Arc::new(Mutex::new(socket)),
+      req_socket: Arc::new(Mutex::new(req_socket)),
+      push_socket: Arc::new(Mutex::new(push_socket)),
     }
   }
 
   pub async fn connect(&mut self) {
-    let (rep_endpoint, _pull_endpoint) = get_sockets_endpoints();
-    let mut socket = self.req_socket.lock().await;
+    let (rep_endpoint, pull_endpoint, _) = get_sockets_endpoints();
+    let mut req_socket = self.req_socket.lock().await;
+    let mut push_socket = self.push_socket.lock().await;
 
-    socket
+    prepare_connect_endpoint(&rep_endpoint);
+    req_socket
       .connect(&rep_endpoint)
       .await
       .expect("failed to connect with the rep socket");
+
+    prepare_connect_endpoint(&pull_endpoint);
+    push_socket
+      .connect(&pull_endpoint)
+      .await
+      .expect("failed to connect with the pull socket");
+  }
+
+  pub fn get_engine_subbscriber() -> EngineSubscriber {
+    let (_, _, pub_endpoint) = get_sockets_endpoints();
+    let subscriber = EngineSubscriber::new(&pub_endpoint);
+
+    subscriber
   }
 
   pub async fn send_request_command<C: CommandWithResponse>(

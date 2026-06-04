@@ -3,7 +3,7 @@ use shared::{
   commands::{
     ParamChangedPayload, PushCommand, RequestCommand, RequestCommandResponse, StateChangeEvent,
   },
-  utils::get_sockets_endpoints,
+  utils::{get_sockets_endpoints, prepare_bind_endpoint},
 };
 use tokio::{
   sync::mpsc::{self, Sender},
@@ -98,16 +98,19 @@ impl MessageHandler {
 
     let (rep_endpoint, pull_endpoint, pub_endpoint) = get_sockets_endpoints();
 
+    prepare_bind_endpoint(&rep_endpoint);
     rep_socket
       .bind(&rep_endpoint)
       .await
       .expect("failed to bind rep socket");
 
+    prepare_bind_endpoint(&pull_endpoint);
     pull_socket
       .bind(&pull_endpoint)
       .await
       .expect("failed to bind pull socket");
 
+    prepare_bind_endpoint(&pub_endpoint);
     pub_socket
       .bind(&pub_endpoint)
       .await

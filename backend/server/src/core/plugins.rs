@@ -1,7 +1,16 @@
-use axum::{Json, extract::State, http::StatusCode};
-use shared::commands::{GetAvailablePlugins};
+use axum::{
+  Json,
+  extract::{State, WebSocketUpgrade, ws::WebSocket},
+  http::StatusCode,
+  response::Response,
+};
+use futures::stream::StreamExt;
+use shared::commands::GetAvailablePlugins;
 
-use crate::{context::AppContext, models::dto::plugins::ListPluginsResponse};
+use crate::{
+  context::AppContext, engine_client::engine_clinet::EngineClient,
+  models::dto::plugins::ListPluginsResponse,
+};
 
 pub async fn list_plugins(
   State(ctx): State<AppContext>,
@@ -18,4 +27,24 @@ pub async fn list_plugins(
     }
     Err(_e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
   }
+}
+
+pub async fn handle_ws_request(ws: WebSocketUpgrade, State(ctx): State<AppContext>) -> Response {
+  ws.on_upgrade(move |socket| ws_hanlder(socket, ctx))
+}
+
+pub async fn ws_hanlder(mut socket: WebSocket, ctx: AppContext) {
+  let mut subscriber = EngineClient::get_engine_subbscriber();
+
+  let (mut ws_tx, mut ws_rx) = socket.split();
+
+  tokio::spawn(async move {
+    subscriber.subscribe().await;
+
+    while let Some(event) = subscriber.recv().await {
+        
+    }
+  });
+
+  tokio::spawn(async move {});
 }
