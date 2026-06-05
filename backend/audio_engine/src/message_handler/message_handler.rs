@@ -3,7 +3,7 @@ use shared::{
   commands::{
     ParamChangedPayload, PushCommand, RequestCommand, RequestCommandResponse, StateChangeEvent,
   },
-  utils::{get_sockets_endpoints, prepare_bind_endpoint},
+  utils::socket::{get_sockets_endpoints, prepare_bind_endpoint},
 };
 use tokio::{
   sync::mpsc::{self, Sender},

@@ -3,8 +3,8 @@ use std::sync::Arc;
 use bincode::{config, decode_from_slice, encode_to_vec};
 use shared::{
   commands::{PushCommand, RequestCommand, RequestCommandError, RequestCommandResponse},
-  data::{ChainItem, PluginMetadata},
-  utils::{get_sockets_endpoints, prepare_connect_endpoint},
+  data::{ChainItem, PluginMetadata, PresetItem},
+  utils::socket::{get_sockets_endpoints, prepare_connect_endpoint},
 };
 use tokio::sync::Mutex;
 use zeromq::{PushSocket, ReqSocket, Socket, SocketRecv, SocketSend};
@@ -101,6 +101,27 @@ impl EngineClient {
       .await?;
 
     let RequestCommandResponse::LoadedPlugin(data) = response else {
+      return Err(RequestCommandError::DataFormatError);
+    };
+
+    Ok(data)
+  }
+
+  pub async fn get_current_state(&self) -> Result<Vec<ChainItem>, RequestCommandError> {
+    let response = self.send_raw(RequestCommand::GetCurrentState).await?;
+    let RequestCommandResponse::CurrentState(data) = response else {
+      return Err(RequestCommandError::DataFormatError);
+    };
+
+    Ok(data)
+  }
+
+  pub async fn load_preset(
+    &self,
+    preset: Vec<PresetItem>,
+  ) -> Result<Vec<ChainItem>, RequestCommandError> {
+    let response = self.send_raw(RequestCommand::LoadPreset(preset)).await?;
+    let RequestCommandResponse::CurrentState(data) = response else {
       return Err(RequestCommandError::DataFormatError);
     };
 

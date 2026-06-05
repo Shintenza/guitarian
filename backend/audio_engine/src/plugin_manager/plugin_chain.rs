@@ -27,9 +27,8 @@ impl PluginChain {
     return self.chain.clone();
   }
 
-  fn get_plugin_instance_config(&self, plugin: &InitializedPlugin) -> InstanceConfig {
+  fn get_plugin_instance_config(plugin: &InitializedPlugin, plugin_id: u32) -> InstanceConfig {
     let state_arc = Arc::new(controls_state_to_port_config(&plugin.state));
-    let plugin_id = self.plugin_id;
 
     InstanceConfig {
       id: plugin_id,
@@ -39,7 +38,7 @@ impl PluginChain {
   }
 
   pub fn add_plugin(&mut self, index: usize, plugin: InitializedPlugin) -> InstanceConfig {
-    let instance_config = self.get_plugin_instance_config(&plugin);
+    let instance_config = PluginChain::get_plugin_instance_config(&plugin, self.plugin_id);
     // TODO handle negative values
     let safe_index = index.min(self.chain.len());
     let command = AudioCommand::AddPlugin(
@@ -82,11 +81,11 @@ impl PluginChain {
     let (i_config, i_id): (Vec<InstanceConfig>, Vec<PluginInstanceWithId>) = preset
       .into_iter()
       .enumerate()
-      .map(|(id, plugin)| {
+      .map(|(index, plugin)| {
         (
-          self.get_plugin_instance_config(&plugin),
+          PluginChain::get_plugin_instance_config(&plugin, index as u32),
           PluginInstanceWithId {
-            id: id as u32,
+            id: index as u32,
             instance: plugin.instance,
           },
         )

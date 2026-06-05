@@ -20,7 +20,7 @@ pub struct InstanceConfig {
 pub struct InitializedPlugin {
   pub plugin_uri: String,
   pub instance: Box<dyn PluginInstance>,
-  pub state: Vec<ControlState>
+  pub state: Vec<ControlState>,
 }
 
 pub struct PluginInstanceWithId {

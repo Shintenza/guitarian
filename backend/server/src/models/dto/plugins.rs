@@ -17,6 +17,11 @@ pub struct AddPluginResponse {
   pub plugin: ChainItem,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct GetCurrentChainResponse {
+  pub chain: Vec<ChainItem>,
+}
+
 #[derive(Deserialize, Debug)]
 #[serde(tag = "action")]
 pub enum WebSocketClientMessage {

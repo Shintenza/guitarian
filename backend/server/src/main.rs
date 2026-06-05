@@ -2,14 +2,16 @@ use std::sync::Arc;
 
 use axum::Router;
 
-use crate::{context::AppContextInner, engine_client::engine_clinet::EngineClient};
+use crate::{
+  context::AppContextInner, engine_client::engine_clinet::EngineClient, utils::db::init_db,
+};
 
 mod api;
 mod context;
-mod engine_client;
-
-pub mod models;
 pub mod core;
+mod engine_client;
+pub mod models;
+mod utils;
 
 #[tokio::main]
 async fn main() {
@@ -19,7 +21,11 @@ async fn main() {
   let mut engine_client = EngineClient::new();
   engine_client.connect().await;
 
-  let context = AppContextInner { engine_client };
+  let db_connection = init_db().await.expect("failed to create db connection");
+  let context = AppContextInner {
+    engine_client,
+    db: db_connection,
+  };
 
   let app = Router::new()
     .merge(api::router())

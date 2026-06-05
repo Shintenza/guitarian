@@ -8,14 +8,14 @@ use axum::{
   response::Response,
 };
 use futures::{SinkExt, stream::StreamExt};
-use shared::commands::StateChangeEvent::{ParamChanged, PluginLoaded};
+use shared::commands::StateChangeEvent::{ParamChanged, PluginLoaded, PresetLoaded};
 
 use crate::{
   context::AppContext,
   engine_client::engine_clinet::EngineClient,
   models::dto::plugins::{
-    AddPluginRequest, AddPluginResponse, ListPluginsResponse, WebSocketClientMessage,
-    WebSocketNotificationMessage,
+    AddPluginRequest, AddPluginResponse, GetCurrentChainResponse, ListPluginsResponse,
+    WebSocketClientMessage, WebSocketNotificationMessage,
   },
 };
 
@@ -49,6 +49,17 @@ pub async fn add_plugin(
   }
 }
 
+pub async fn get_current_chain(
+  State(ctx): State<AppContext>,
+) -> Result<Json<GetCurrentChainResponse>, StatusCode> {
+  let chain = ctx
+    .engine_client
+    .get_current_state()
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+  Ok(Json(GetCurrentChainResponse { chain }))
+}
+
 pub async fn handle_ws_request(ws: WebSocketUpgrade, State(ctx): State<AppContext>) -> Response {
   ws.on_upgrade(move |socket| ws_hanlder(socket, ctx))
 }
@@ -64,6 +75,9 @@ pub async fn ws_hanlder(socket: WebSocket, ctx: AppContext) {
     while let Some(event) = subscriber.recv().await {
       let message: String;
       match event {
+        PresetLoaded => {
+          message = "loaded a preset".to_string();
+        }
         PluginLoaded => {
           message = "loaded plugin".to_string();
         }
