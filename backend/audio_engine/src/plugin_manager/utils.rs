@@ -1,5 +1,9 @@
+use atomic_float::AtomicF32;
+use jack::jack_sys::JackPortRegistrationCallback;
 use livi::Plugin;
-use shared::data::{ControlMetadata, PluginMetadata};
+use shared::data::{ControlMetadata, ControlState, PluginMetadata};
+
+use crate::plugin_manager::types::PortConfig;
 
 pub fn get_lv2_plugin_controls_metadata(plugin: &Plugin) -> Vec<ControlMetadata> {
   let mut controls_metadata: Vec<ControlMetadata> = Vec::new();
@@ -29,4 +33,14 @@ pub fn get_lv2_plugin_metadata(plugin: &Plugin) -> PluginMetadata {
     },
     controls_metadata,
   }
+}
+
+pub fn controls_state_to_port_config(controls_state: &Vec<ControlState>) -> Vec<PortConfig> {
+  controls_state
+    .iter()
+    .map(|state| PortConfig {
+      id: state.id as usize,
+      value: AtomicF32::new(state.value),
+    })
+    .collect()
 }

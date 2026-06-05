@@ -1,6 +1,8 @@
 use bincode::{config, encode_to_vec};
 use shared::{
-  commands::{ParamChangedPayload, PushCommand, RequestCommand, RequestCommandResponse, StateChangeEvent},
+  commands::{
+    ParamChangedPayload, PushCommand, RequestCommand, RequestCommandResponse, StateChangeEvent,
+  },
   utils::{get_sockets_endpoints, prepare_bind_endpoint},
 };
 use tokio::{
@@ -43,7 +45,12 @@ impl MessageHandler {
       RequestCommand::GetAvailablePlugins => {
         let plugins_vec = self.plugin_manager.get_plugins();
         response = RequestCommandResponse::AvailablePlugins(plugins_vec);
+        tx_pub.send(StateChangeEvent::PresetLoaded).await;
       }
+      RequestCommand::LoadPreset(preset) => match self.plugin_manager.load_preset(preset) {
+        Ok(chain_items) => response = RequestCommandResponse::CurrentState(chain_items),
+        Err(_e) => response = RequestCommandResponse::Error("failed to load preset".to_string()),
+      },
       RequestCommand::GetCurrentState => {
         let current_state = self.plugin_manager.get_current_chain_state();
         response = RequestCommandResponse::CurrentState(current_state);

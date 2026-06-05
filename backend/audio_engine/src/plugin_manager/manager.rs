@@ -1,11 +1,13 @@
 use std::sync::atomic::Ordering;
 
 use ringbuf::HeapProd;
-use shared::data::{ChainItem, ControlState, PluginMetadata};
+use shared::data::{ChainItem, ControlState, PluginMetadata, PresetItem};
 
 use crate::plugin_manager::plugin_chain::PluginChain;
 use crate::plugin_manager::plugin_repository::{LV2PluginRepository, PluginRepository};
-use crate::plugin_manager::types::{AudioCommand, InstanceConfig, PluginActionError};
+use crate::plugin_manager::types::{
+  AudioCommand, InitializedPlugin, InstanceConfig, PluginActionError,
+};
 
 pub struct PluginManager {
   lv2_repository: LV2PluginRepository,
@@ -60,19 +62,17 @@ impl PluginManager {
     Ok(())
   }
 
-  pub fn load_plugin(&mut self, position: usize, uri: &str) -> Result<ChainItem, PluginActionError> {
-    let state = self
+  pub fn load_plugin(
+    &mut self,
+    position: usize,
+    uri: &str,
+  ) -> Result<ChainItem, PluginActionError> {
+    let initialized_plugin = self
       .lv2_repository
-      .get_plugin_default_port_values(uri)
-      .ok_or(PluginActionError::NotFound)?;
-    let plugin_instance = self
-      .lv2_repository
-      .get_plugin_instance(uri)
+      .get_initialized_plugin(uri)
       .ok_or(PluginActionError::NotFound)?;
 
-    let result = self
-      .plugin_chain
-      .add_plugin(position, plugin_instance, state, uri);
+    let result = self.plugin_chain.add_plugin(position, initialized_plugin);
     Ok(self.instance_config_to_chain_item(result))
   }
 
@@ -86,5 +86,32 @@ impl PluginManager {
     }
 
     chain_state
+  }
+
+  pub fn load_preset(
+    &mut self,
+    preset: Vec<PresetItem>,
+  ) -> Result<Vec<ChainItem>, PluginActionError> {
+    let mut initialized_plugins: Vec<InitializedPlugin> = Vec::with_capacity(preset.len());
+
+    for preset_item in preset {
+      let plugin_instance = self
+        .lv2_repository
+        .get_plugin_instance(&preset_item.plugin_uri)
+        .ok_or(PluginActionError::NotFound)?;
+      initialized_plugins.push(InitializedPlugin {
+        instance: Box::new(plugin_instance),
+        plugin_uri: preset_item.plugin_uri,
+        state: preset_item.controls_state,
+      })
+    }
+
+    let load_result = self.plugin_chain.load_preset(initialized_plugins);
+    let chain_items = load_result
+      .into_iter()
+      .map(|item| self.instance_config_to_chain_item(item))
+      .collect();
+
+    Ok(chain_items)
   }
 }

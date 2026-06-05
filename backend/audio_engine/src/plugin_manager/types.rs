@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use atomic_float::AtomicF32;
-use livi::{Instance};
+use shared::data::ControlState;
 
 use crate::plugin_manager::plugin_instance::PluginInstance;
 
@@ -17,19 +17,20 @@ pub struct InstanceConfig {
   pub state: Arc<Vec<PortConfig>>,
 }
 
-pub struct AudioPlugin {
-  pub id: u32,
-  pub instance: Instance,
-  pub state: Arc<Vec<PortConfig>>,
+pub struct InitializedPlugin {
+  pub plugin_uri: String,
+  pub instance: Box<dyn PluginInstance>,
+  pub state: Vec<ControlState>
 }
 
 pub struct PluginInstanceWithId {
   pub id: u32,
-  pub instance: Box<dyn PluginInstance> 
+  pub instance: Box<dyn PluginInstance>,
 }
 
 pub enum AudioCommand {
   AddPlugin(usize, PluginInstanceWithId),
+  LoadPreset(Vec<PluginInstanceWithId>),
   RemovePlugin(u32),
 }
 

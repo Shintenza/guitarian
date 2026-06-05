@@ -1,8 +1,9 @@
 use jack::{AudioIn, AudioOut, Client, Control, Port, ProcessHandler, ProcessScope};
 use ringbuf::{HeapCons, traits::Consumer};
 
-use crate::plugin_manager::{
-  types::{AudioCommand, PluginInstanceWithId},
+use crate::plugin_manager::types::{
+  AudioCommand::{self},
+  PluginInstanceWithId,
 };
 
 const INITIAL_ACTIVE_PLUGINS_CAPACITY: usize = 128;
@@ -20,7 +21,8 @@ impl AudioProcessor {
     audio_out: Port<AudioOut>,
     audio_commands_consumer: HeapCons<AudioCommand>,
   ) -> Self {
-    let active_plugins: Vec<PluginInstanceWithId> = Vec::with_capacity(INITIAL_ACTIVE_PLUGINS_CAPACITY);
+    let active_plugins: Vec<PluginInstanceWithId> =
+      Vec::with_capacity(INITIAL_ACTIVE_PLUGINS_CAPACITY);
 
     Self {
       audio_in,
@@ -33,6 +35,9 @@ impl AudioProcessor {
   fn handle_commands(&mut self) {
     while let Some(command) = self.audio_commands_consumer.try_pop() {
       match command {
+        AudioCommand::LoadPreset(plugins) => {
+          self.active_plugins = plugins;
+        }
         AudioCommand::AddPlugin(position, plugin) => {
           log::info!("plugin loaded");
           self.active_plugins.insert(position, plugin);

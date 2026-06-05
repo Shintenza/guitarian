@@ -1,12 +1,13 @@
 use bincode::{Decode, Encode};
 
-use crate::data::{ChainItem, PluginMetadata};
+use crate::data::{ChainItem, PluginMetadata, PresetItem};
 
 #[derive(Encode, Decode)]
 pub enum RequestCommand {
   GetAvailablePlugins,
   GetCurrentState,
-  LoadPlugin(String, usize)
+  LoadPlugin(String, usize),
+  LoadPreset(Vec<PresetItem>)
 }
 
 #[derive(Encode, Decode)]
@@ -43,6 +44,7 @@ pub struct ParamChangedPayload {
 #[derive(Encode, Decode)]
 pub enum StateChangeEvent {
   PluginLoaded,
+  PresetLoaded,
   ParamChanged(ParamChangedPayload)
 }
 

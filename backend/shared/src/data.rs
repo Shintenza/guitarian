@@ -30,3 +30,9 @@ pub struct ChainItem {
   pub metadata: PluginMetadata,
   pub controls_state: Vec<ControlState>,
 }
+
+#[derive(Decode, Encode, Serialize, Deserialize)]
+pub struct PresetItem {
+  pub plugin_uri: String,
+  pub controls_state: Vec<ControlState>
+}

@@ -2,8 +2,8 @@ use ringbuf::{HeapProd, traits::Producer};
 use std::sync::{Arc, atomic::Ordering};
 
 use crate::plugin_manager::{
-  plugin_instance::PluginInstance,
-  types::{AudioCommand, InstanceConfig, PluginInstanceWithId, PortConfig},
+  types::{AudioCommand, InitializedPlugin, InstanceConfig, PluginInstanceWithId},
+  utils::controls_state_to_port_config,
 };
 
 pub struct PluginChain {
@@ -27,36 +27,34 @@ impl PluginChain {
     return self.chain.clone();
   }
 
-  pub fn add_plugin(
-    &mut self,
-    index: usize,
-    instance: impl PluginInstance,
-    state: Vec<PortConfig>,
-    plugin_uri: &str,
-  ) -> InstanceConfig {
-    let state_arc = Arc::new(state);
-    let safe_index = index.min(self.chain.len());
+  fn get_plugin_instance_config(&self, plugin: &InitializedPlugin) -> InstanceConfig {
+    let state_arc = Arc::new(controls_state_to_port_config(&plugin.state));
     let plugin_id = self.plugin_id;
 
-    let plugin_meta = InstanceConfig {
+    InstanceConfig {
       id: plugin_id,
       state: state_arc.clone(),
-      plugin_uri: plugin_uri.to_string(),
-    };
+      plugin_uri: plugin.plugin_uri.to_string(),
+    }
+  }
 
+  pub fn add_plugin(&mut self, index: usize, plugin: InitializedPlugin) -> InstanceConfig {
+    let instance_config = self.get_plugin_instance_config(&plugin);
+    // TODO handle negative values
+    let safe_index = index.min(self.chain.len());
     let command = AudioCommand::AddPlugin(
       index,
       PluginInstanceWithId {
         id: self.plugin_id,
-        instance: Box::new(instance),
+        instance: plugin.instance,
       },
     );
 
     self.producer.try_push(command);
-    self.chain.insert(safe_index, plugin_meta.clone());
+    self.chain.insert(safe_index, instance_config.clone());
     self.plugin_id += 1;
 
-    plugin_meta
+    instance_config
   }
 
   pub fn remove_plugin(&mut self, plugin_id: u32) {
@@ -78,5 +76,30 @@ impl PluginChain {
     };
 
     port.value.store(new_value, Ordering::Relaxed);
+  }
+
+  pub fn load_preset(&mut self, preset: Vec<InitializedPlugin>) -> Vec<InstanceConfig> {
+    let (i_config, i_id): (Vec<InstanceConfig>, Vec<PluginInstanceWithId>) = preset
+      .into_iter()
+      .enumerate()
+      .map(|(id, plugin)| {
+        (
+          self.get_plugin_instance_config(&plugin),
+          PluginInstanceWithId {
+            id: id as u32,
+            instance: plugin.instance,
+          },
+        )
+      })
+      .unzip();
+
+    // TODO revert these operations once try_push fails
+    self.plugin_id = i_config.len() as u32;
+    self.chain = i_config.clone();
+
+    let command = AudioCommand::LoadPreset(i_id);
+
+    self.producer.try_push(command);
+    i_config
   }
 }
