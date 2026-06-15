@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 jack = "0.13"
-livi = "0.7.5"
+livi = { git = "https://github.com/Shintenza/livi-rs" }
 ringbuf = "0.4.8"
 ctrlc = "3.5"
 log = "0.4.29"

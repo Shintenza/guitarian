@@ -357,7 +357,7 @@ dependencies = [
  "jack",
  "livi",
  "log",
- "ringbuf 0.4.8",
+ "ringbuf",
  "shared",
  "tokio",
  "tokio-util",
@@ -1685,8 +1685,7 @@ dependencies = [
 [[package]]
 name = "lilv"
 version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06e14c13e0d64ed27265d0cc41563b131cd8499cde811618b646dd309763906d"
+source = "git+https://github.com/wmedrano/lilv-rs#195f0ce41f858b2499118a30916f8c3e8c3d5478"
 dependencies = [
  "lilv-sys",
  "lv2_raw",
@@ -1712,14 +1711,13 @@ checksum = "92daf443525c4cce67b150400bc2316076100ce0b3686209eb8cf3c31612e6f0"
 [[package]]
 name = "livi"
 version = "0.7.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29ea5b22748e1759210a4f78b4bc4b6a1cf02d6916c08c137bf704dd9f246306"
+source = "git+https://github.com/Shintenza/livi-rs#a238b04356c22d1caa877a96ba7b6923557ad5ac"
 dependencies = [
  "lilv",
  "log",
  "lv2-sys",
  "lv2_raw",
- "ringbuf 0.3.3",
+ "ringbuf",
 ]
 
 [[package]]
@@ -2310,15 +2308,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71fe3824f5629716b1589be05dacd749f6aa084c87e00e016714a8cdfccc997c"
 dependencies = [
  "bytecheck",
-]
-
-[[package]]
-name = "ringbuf"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79abed428d1fd2a128201cec72c5f6938e2da607c6f3745f769fabea399d950a"
-dependencies = [
- "crossbeam-utils",
 ]
 
 [[package]]
