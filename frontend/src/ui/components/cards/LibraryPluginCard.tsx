@@ -2,33 +2,40 @@ import Text from "@/ui/components/text/Text";
 import { getEffectUIConfig } from "@/ui/effects/definitions";
 import { EffectClass } from "@/ui/effects/types";
 import { MaterialDesignIcons } from "@react-native-vector-icons/material-design-icons";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 
 type LibraryPluginCardProps = {
   name: string;
   effectClass: EffectClass;
+  onPress: () => void;
 };
 
-const LibraryPluginCard = ({ name, effectClass }: LibraryPluginCardProps) => {
+const LibraryPluginCard = ({
+  name,
+  effectClass,
+  onPress,
+}: LibraryPluginCardProps) => {
   const { iconName, color } = getEffectUIConfig(effectClass);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.iconContainer(color)}>
-        <MaterialDesignIcons name={iconName} color={color} size={48} />
-      </View>
-      <View style={styles.textContainer}>
-        <Text size="S" numberOfLines={1}>
-          {name}
-        </Text>
-        <View style={styles.pill(color)}>
-          <Text size="XS" variant="bold">
-            {effectClass.toUpperCase()}
+    <Pressable onPress={onPress}>
+      <View style={styles.container}>
+        <View style={styles.iconContainer(color)}>
+          <MaterialDesignIcons name={iconName} color={color} size={48} />
+        </View>
+        <View style={styles.textContainer}>
+          <Text size="S" numberOfLines={1}>
+            {name}
           </Text>
+          <View style={styles.pill(color)}>
+            <Text size="XS" variant="bold">
+              {effectClass.toUpperCase()}
+            </Text>
+          </View>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 };
 

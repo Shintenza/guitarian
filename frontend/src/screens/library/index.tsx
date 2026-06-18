@@ -1,4 +1,5 @@
 import { useAllPlugins } from "@/api/plugins";
+import { useChainStore } from "@/stores/chain";
 import { Text } from "@/ui/components";
 import LibraryPluginCard from "@/ui/components/cards/LibraryPluginCard";
 import { FlatList, View } from "react-native";
@@ -6,6 +7,7 @@ import { StyleSheet } from "react-native-unistyles";
 
 const LibraryScreen = () => {
   const { data } = useAllPlugins();
+  const { addNode } = useChainStore();
   return (
     <FlatList
       data={data}
@@ -23,7 +25,11 @@ const LibraryScreen = () => {
       }
       renderItem={({ item: plugin }) => (
         <View style={styles.cardContainer}>
-          <LibraryPluginCard name={plugin.name} effectClass={plugin.class} />
+          <LibraryPluginCard
+            name={plugin.name}
+            effectClass={plugin.class}
+            onPress={() => addNode(plugin)}
+          />
         </View>
       )}
     />

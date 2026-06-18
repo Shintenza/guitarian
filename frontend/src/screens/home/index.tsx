@@ -1,10 +1,11 @@
-import { BlueprintGrid, Text } from "@/ui/components";
+import { BlueprintGrid } from "@/ui/components";
 import { TrueSheet } from "@lodev09/react-native-true-sheet";
 import { useRef } from "react";
 import { Button } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import LibraryScreen from "../library";
+import ChainRenderer from "./components/chainRenderer";
 
 const HomeScreen = () => {
   const sheet = useRef<TrueSheet>(null);
@@ -17,7 +18,7 @@ const HomeScreen = () => {
         title="Test"
         onPress={async () => await sheet.current?.present()}
       />
-      <Text>This is a home screen</Text>
+      <ChainRenderer />
       <TrueSheet
         ref={sheet}
         detents={[0.5, 0.8]}

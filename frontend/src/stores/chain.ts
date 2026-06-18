@@ -1,21 +1,28 @@
 import { PluginMetadata } from "@/api/plugins/types";
+import * as Crypto from "expo-crypto";
 import { create } from "zustand";
+import { useShallow } from "zustand/react/shallow";
 
-type ChainState = {
-  chain: PluginMetadata[];
-  addNode: (plugin: PluginMetadata) => void;
-  removeNode: (uri: string) => void;
-  moveNode: (fromIndex: number, toIndex: number) => void;
-  clearChain: () => void;
+export type ChainItem = PluginMetadata & {
+  id: string;
 };
 
-export const useChainStore = create<ChainState>((set) => ({
+type ChainState = {
+  chain: ChainItem[];
+  addNode: (plugin: PluginMetadata) => void;
+  removeNode: (uri: string) => void;
+  moveNode: (from: number, to: number) => void;
+  clearChain: () => void;
+  setChain: (plugins: ChainItem[]) => void;
+};
+
+export const chainStore = create<ChainState>((set) => ({
   chain: [],
 
   addNode: (plugin) =>
     set((state) => {
       return {
-        chain: [...state.chain, plugin],
+        chain: [...state.chain, { id: Crypto.randomUUID(), ...plugin }],
       };
     }),
 
@@ -24,14 +31,43 @@ export const useChainStore = create<ChainState>((set) => ({
       chain: state.chain.filter((node) => node.uri !== uri),
     })),
 
-  moveNode: (fromIndex, toIndex) =>
+  moveNode: (fromIndex: number, toIndex: number) =>
     set((state) => {
-      const newChain = [...state.chain];
-      const [movedNode] = newChain.splice(fromIndex, 1);
-      newChain.splice(toIndex, 0, movedNode);
+      const chain = [...state.chain];
 
-      return { chain: newChain };
+      if (
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= chain.length ||
+        toIndex >= chain.length
+      ) {
+        return state;
+      }
+
+      const [moved] = chain.splice(fromIndex, 1);
+      chain.splice(toIndex, 0, moved);
+
+      return { chain };
     }),
+
+  setChain: (plugins) =>
+    set(() => ({
+      chain: plugins,
+    })),
 
   clearChain: () => set({ chain: [] }),
 }));
+
+export const useChainStore = () => {
+  const store = chainStore(
+    useShallow((s) => ({
+      chain: s.chain,
+      addNode: s.addNode,
+      removeNode: s.removeNode,
+      moveNode: s.moveNode,
+      setChain: s.setChain,
+    })),
+  );
+
+  return { ...store };
+};
