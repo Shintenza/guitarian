@@ -19,5 +19,5 @@ export const variantToFontMap: Record<TextVariant, string> = {
   regular: fonts.InterRegular,
   medium: fonts.InterMedium,
   semiBold: fonts.InterSemiBold,
-  bold: fonts.InterBold,
+  bold: fonts.UnigeoBold,
 };

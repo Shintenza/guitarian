@@ -64,6 +64,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             "./assets/fonts/Inter-Medium.ttf",
             "./assets/fonts/Inter-SemiBold.ttf",
             "./assets/fonts/Inter-Bold.ttf",
+            "./assets/fonts/Unigeo-Bold.ttf",
           ],
         },
       ],

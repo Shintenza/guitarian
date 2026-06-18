@@ -4,6 +4,7 @@ export const fonts = {
   InterMedium: "Inter-Medium",
   InterSemiBold: "Inter-SemiBold",
   InterBold: "Inter-Bold",
+  UnigeoBold: "Unigeo-Bold",
 };
 
 export const typographyConstants = {
