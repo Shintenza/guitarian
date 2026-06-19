@@ -45,3 +45,8 @@ export const lightModeColors = {
     divider: "#A1A1AA",
   },
 } as const;
+
+export const appThemes = {
+  light: lightModeColors,
+  dark: darkModeColors,
+};

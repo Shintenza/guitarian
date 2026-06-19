@@ -4,6 +4,8 @@ import { EffectClass } from "@/ui/effects/types";
 import { MaterialDesignIcons } from "@react-native-vector-icons/material-design-icons";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import { CARD_SIZES } from "./size";
+import { CardTypes } from "./types";
 
 type ChainCardProps = {
   name: string;
@@ -34,6 +36,8 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: 8,
     alignItems: "center",
     gap: 12,
+    width: CARD_SIZES[CardTypes.chainCard].width,
+    height: CARD_SIZES[CardTypes.chainCard].height,
   },
   iconContainer: (color: string) => ({
     borderRadius: 8,

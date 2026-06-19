@@ -1,19 +1,29 @@
 import { useChainStore } from "@/stores/chain";
 import ChainCard from "@/ui/components/cards/ChainCard";
+import { CARD_SIZES } from "@/ui/components/cards/size";
+import { CardTypes } from "@/ui/components/cards/types";
+import { useResponsiveValue } from "@/ui/theme/utils";
 import { useCallback, useMemo } from "react";
-import { View } from "react-native";
+import { View, useWindowDimensions } from "react-native";
+import Animated, { useAnimatedRef } from "react-native-reanimated";
 import Sortable, {
   ActiveItemDroppedCallback,
   SortableGridRenderItem,
 } from "react-native-sortables";
 import { StyleSheet } from "react-native-unistyles";
+import ChainPath from "./chainPath";
 import { GridItem } from "./types";
 import { useChainDragStartegy } from "./useChainDragStartegy";
 import { GHOST_NODE_PREFIX, snakifyArray, toLogical } from "./utils";
 
 const COLUMNS = 3;
+const PADDING_SIZE = 24;
+const GRID_GAP = 12;
 
 const ChainRenderer = () => {
+  const { width } = useWindowDimensions();
+  const scrollableRef = useAnimatedRef<Animated.ScrollView>();
+  const cardHeight = useResponsiveValue(CARD_SIZES[CardTypes.chainCard].height);
   const { chain, moveNode } = useChainStore();
 
   const visualData = useMemo(() => {
@@ -62,28 +72,44 @@ const ChainRenderer = () => {
     [],
   );
 
+  const startY = PADDING_SIZE + cardHeight / 2;
+  const stepHeight = GRID_GAP + cardHeight;
+
   return (
     <View style={styles.container}>
-      <Sortable.Grid
-        data={visualData}
-        columns={COLUMNS}
-        rowGap={32}
-        columnGap={32}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        customHandle
-        strategy={useChainDragStartegy}
-        onActiveItemDropped={handleOrderChange}
+      <ChainPath
+        startY={startY}
+        width={width}
+        chainLength={chain.length}
+        numberOfColumns={COLUMNS}
+        padding={10}
+        stepHeight={stepHeight}
       />
+      <Animated.ScrollView ref={scrollableRef} style={styles.gridContainer}>
+        <Sortable.Grid
+          data={visualData}
+          columns={COLUMNS}
+          rowGap={GRID_GAP}
+          columnGap={GRID_GAP}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          customHandle
+          strategy={useChainDragStartegy}
+          onActiveItemDropped={handleOrderChange}
+          scrollableRef={scrollableRef}
+        />
+      </Animated.ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create((theme) => ({
   container: {
-    paddingTop: 24,
-    paddingHorizontal: 48,
     flex: 1,
+  },
+  gridContainer: {
+    paddingTop: PADDING_SIZE,
+    paddingHorizontal: PADDING_SIZE,
   },
 }));
 
