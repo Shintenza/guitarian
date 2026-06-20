@@ -7,7 +7,7 @@ SplashScreen.preventAutoHideAsync();
 export default function TabLayout() {
   return (
     <AppProvider>
-      <Stack screenOptions={{ headerShown: false }}></Stack>
+      <Stack screenOptions={{ headerShown: false }} />
     </AppProvider>
   );
 }

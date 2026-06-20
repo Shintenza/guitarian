@@ -1,0 +1,69 @@
+diff --git a/build/community/menu/types.d.ts b/build/community/menu/types.d.ts
+index 31e1234b9e67e167d8ecebaaaed90020f82843fb..9cfb54331feb6276fa4d5a0d107c962bd73bc085 100644
+--- a/build/community/menu/types.d.ts
++++ b/build/community/menu/types.d.ts
+@@ -154,6 +154,11 @@ export type MenuComponentProps = {
+      * Style applied to the trigger wrapper.
+      */
+     style?: StyleProp<ViewStyle>;
++    /**
++     * Controls background color of the dropdown menu
++     * @platform android
++     */
++    dropdownColor?: ColorValue;
+     /**
+      * Test identifier passed through to the trigger view.
+      */
+diff --git a/src/community/menu/MenuView.android.tsx b/src/community/menu/MenuView.android.tsx
+index c26c980e1c6588a2d76a7d6db60c321180f06e87..db9442dcdf0e3071ac9e2f83f6b9d27e044aea67 100644
+--- a/src/community/menu/MenuView.android.tsx
++++ b/src/community/menu/MenuView.android.tsx
+@@ -1,7 +1,6 @@
+ import * as React from 'react';
+ import { Pressable, View } from 'react-native';
+ 
+-import type { MenuAction, MenuComponentProps, MenuComponentRef, NativeActionEvent } from './types';
+ import { HorizontalDivider } from '../../jetpack-compose/Divider';
+ import { DropdownMenu } from '../../jetpack-compose/DropdownMenu';
+ import {
+@@ -13,6 +12,7 @@ import { Icon } from '../../jetpack-compose/Icon';
+ import { RNHostView } from '../../jetpack-compose/RNHostView';
+ import { Text as ComposeText } from '../../jetpack-compose/Text';
+ import { useMaterialColors } from '../../jetpack-compose/colors';
++import type { MenuAction, MenuComponentProps, MenuComponentRef, NativeActionEvent } from './types';
+ 
+ function actionId(action: MenuAction): string {
+   return action.id ?? action.title;
+@@ -161,6 +161,7 @@ export function MenuView(props: MenuComponentProps & { ref?: React.Ref<MenuCompo
+     shouldOpenOnLongPress,
+     style,
+     children,
++    dropdownColor,
+     testID,
+   } = props;
+   const [expanded, setExpanded] = React.useState(false);
+@@ -190,7 +191,7 @@ export function MenuView(props: MenuComponentProps & { ref?: React.Ref<MenuCompo
+   return (
+     <View style={style} testID={testID}>
+       <Host matchContents>
+-        <DropdownMenu expanded={expanded} onDismissRequest={dismissAll} color="red">
++        <DropdownMenu expanded={expanded} onDismissRequest={dismissAll} color={dropdownColor}>
+           <DropdownMenu.Trigger>
+             <RNHostView matchContents>
+               <Pressable
+diff --git a/src/community/menu/types.tsx b/src/community/menu/types.tsx
+index 40e236dc83fe5cd564b1428c969bdab569f2875f..fcebc3435263d52bd9dfc1544e242c778329fc0d 100644
+--- a/src/community/menu/types.tsx
++++ b/src/community/menu/types.tsx
+@@ -160,6 +160,11 @@ export type MenuComponentProps = {
+    * Style applied to the trigger wrapper.
+    */
+   style?: StyleProp<ViewStyle>;
++  /**
++   * Controls background color of the dropdown menu
++   * @platform android
++   */
++  dropdownColor?: ColorValue;
+   /**
+    * Test identifier passed through to the trigger view.
+    */

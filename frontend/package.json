@@ -10,6 +10,7 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@expo/material-symbols": "^0.1.1",
     "@expo/ui": "~56.0.18",
     "@lodev09/react-native-true-sheet": "^3.11.0",
     "@react-native-async-storage/async-storage": "^3.1.1",
@@ -64,5 +65,8 @@
     "type-fest": "^5.7.0",
     "typescript": "~6.0.3"
   },
-  "private": true
+  "private": true,
+  "patchedDependencies": {
+    "@expo/ui@56.0.18": "patches/@expo%2Fui@56.0.18.patch"
+  }
 }

@@ -56,17 +56,23 @@ const ChainRenderer = () => {
   const renderItem = useCallback<SortableGridRenderItem<GridItem>>(
     ({ item }) => {
       return (
-        <Sortable.Handle mode={item.isGhost ? "fixed-order" : "draggable"}>
-          {item.isGhost ? (
-            <View style={{ flex: 1, opacity: 0 }} pointerEvents="none" />
-          ) : (
-            <ChainCard
-              name={item.name}
-              effectClass={item.class}
-              key={item.uri}
-            />
-          )}
-        </Sortable.Handle>
+        <Sortable.Touchable
+          onLongPress={() => {
+            console.log(" THIS IS A LONG PRESS!");
+          }}
+        >
+          <Sortable.Handle mode={item.isGhost ? "fixed-order" : "draggable"}>
+            {item.isGhost ? (
+              <View style={{ flex: 1, opacity: 0 }} pointerEvents="none" />
+            ) : (
+              <ChainCard
+                name={item.name}
+                effectClass={item.class}
+                key={item.uri}
+              />
+            )}
+          </Sortable.Handle>
+        </Sortable.Touchable>
       );
     },
     [],

@@ -1,5 +1,6 @@
 import { PluginMetadata } from "@/api/plugins/types";
 import * as Crypto from "expo-crypto";
+import { useMemo } from "react";
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 
@@ -8,6 +9,8 @@ export type ChainItem = PluginMetadata & {
 };
 
 type ChainState = {
+  presetName: string;
+  initialChain: ChainItem[];
   chain: ChainItem[];
   addNode: (plugin: PluginMetadata) => void;
   removeNode: (uri: string) => void;
@@ -17,6 +20,8 @@ type ChainState = {
 };
 
 export const chainStore = create<ChainState>((set) => ({
+  presetName: "New preset",
+  initialChain: [],
   chain: [],
 
   addNode: (plugin) =>
@@ -61,6 +66,8 @@ export const chainStore = create<ChainState>((set) => ({
 export const useChainStore = () => {
   const store = chainStore(
     useShallow((s) => ({
+      presetName: s.presetName,
+      initialChain: s.initialChain,
       chain: s.chain,
       addNode: s.addNode,
       removeNode: s.removeNode,
@@ -69,5 +76,12 @@ export const useChainStore = () => {
     })),
   );
 
-  return { ...store };
+  const isDirty = useMemo(() => {
+    const currentChainStr = JSON.stringify(store.chain);
+    const initialChainStr = JSON.stringify(store.initialChain);
+
+    return currentChainStr !== initialChainStr;
+  }, [store.chain, store.initialChain]);
+
+  return { ...store, isDirty };
 };

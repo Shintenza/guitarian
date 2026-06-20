@@ -2,25 +2,27 @@ import MaterialDesignIcons, {
   MaterialDesignIconsIconName,
 } from "@react-native-vector-icons/material-design-icons";
 import * as Haptics from "expo-haptics";
-import { Pressable, ViewStyle } from "react-native";
+import { Pressable, PressableProps, ViewStyle } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
 type IconButtonSize = "regular" | "huge";
 
 type IconButtonProps = {
   iconName: MaterialDesignIconsIconName;
-  color?: string;
-  onPress: () => void;
+  backgroundColor?: string;
   size?: IconButtonSize;
   containerStyle?: ViewStyle;
-};
+  style?: ViewStyle;
+  onPress?: () => void;
+} & Omit<PressableProps, "style">;
 
 const IconButton = ({
   iconName,
-  color,
+  backgroundColor,
   size = "regular",
   containerStyle,
   onPress,
+  ...rest
 }: IconButtonProps) => {
   const { theme } = useUnistyles();
 
@@ -30,11 +32,16 @@ const IconButton = ({
 
   return (
     <Pressable
+      {...rest}
       onPress={() => {
         Haptics.selectionAsync();
-        onPress();
+        onPress?.();
       }}
-      style={[styles.container({ color }), containerStyle]}
+      style={[
+        styles.container({ backgroundColor }),
+        containerStyle,
+        rest.style,
+      ]}
     >
       <MaterialDesignIcons
         name={iconName}
@@ -46,13 +53,13 @@ const IconButton = ({
 };
 
 const iconSize: Record<IconButtonSize, number> = {
-  regular: 12,
+  regular: 18,
   huge: 32,
 };
 
 export const styles = StyleSheet.create((theme) => ({
-  container: ({ color }: { color?: string }) => ({
-    backgroundColor: color ?? theme.colors.orange,
+  container: ({ backgroundColor }: { backgroundColor?: string }) => ({
+    backgroundColor: backgroundColor ?? theme.colors.orange,
     borderRadius: 1000,
     justifyContent: "center",
     alignItems: "center",
@@ -61,7 +68,7 @@ export const styles = StyleSheet.create((theme) => ({
     variants: {
       size: {
         regular: {
-          padding: 12,
+          padding: 8,
         },
         huge: {
           padding: 20,
