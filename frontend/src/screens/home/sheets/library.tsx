@@ -6,15 +6,13 @@ import { FlatList, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { HomeScreenSheet, HomeScreenSheetProps } from "./shared";
 
-type LibrarySheetProps = {
-  ref: HomeScreenSheetProps["ref"];
-};
+type LibrarySheetProps = Omit<HomeScreenSheetProps, "children">;
 
-const LibrarySheet = ({ ref }: LibrarySheetProps) => {
+const LibrarySheet = (props: LibrarySheetProps) => {
   const { data } = useAllPlugins();
   const { addNode } = useChainStore();
   return (
-    <HomeScreenSheet ref={ref}>
+    <HomeScreenSheet {...props}>
       <FlatList
         data={data}
         nestedScrollEnabled

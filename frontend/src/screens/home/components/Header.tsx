@@ -5,11 +5,7 @@ import { Icon } from "@expo/ui";
 import { MenuView, NativeActionEvent } from "@expo/ui/community/menu";
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import { Pressable, View } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import Animated, { useSharedValue, withTiming } from "react-native-reanimated";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
 const editIcon = Icon.select({
@@ -23,10 +19,16 @@ const saveIcon = Icon.select({
 });
 
 type HeaderProps = {
+  isPresetsModalActive?: boolean;
   onEdit: () => void;
+  onPresetPress: () => void;
 };
 
-const Header = ({ onEdit }: HeaderProps) => {
+const Header = ({
+  isPresetsModalActive,
+  onEdit,
+  onPresetPress,
+}: HeaderProps) => {
   const { presetName, isDirty } = useChainStore();
   const chevronProgress = useSharedValue(0);
 
@@ -36,11 +38,8 @@ const Header = ({ onEdit }: HeaderProps) => {
       destination = 0;
     }
     chevronProgress.value = withTiming(destination);
+    onPresetPress();
   };
-
-  const animatedChevronSyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${chevronProgress.value}deg` }],
-  }));
 
   const onActionPress = (e: NativeActionEvent) => {
     const action = e.nativeEvent.event;
@@ -58,7 +57,14 @@ const Header = ({ onEdit }: HeaderProps) => {
           name={"chevron-down"}
           color={theme.colors.text.primary}
           size={18}
-          style={[animatedChevronSyle, styles.chevronStyle]}
+          style={[
+            {
+              transform: [{ rotate: `${isPresetsModalActive ? 180 : 0}deg` }],
+              transitionDuration: 200,
+              transitionProperty: ["transform"],
+            },
+            styles.chevronStyle,
+          ]}
         />
       </Pressable>
       <View style={styles.controlsBox}>

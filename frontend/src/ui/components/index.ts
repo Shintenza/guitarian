@@ -5,3 +5,4 @@ export { default as IconButton } from "./IconButton";
 export { default as Popup } from "./Popup";
 export * from "./text";
 
+export type { ConfirmationPopupProps } from "./ConfirmationPopup";

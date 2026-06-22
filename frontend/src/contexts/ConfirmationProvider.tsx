@@ -1,6 +1,4 @@
-import ConfirmationPopup, {
-  ConfirmationPopupProps,
-} from "@/ui/components/ConfirmationPopup";
+import { ConfirmationPopup, ConfirmationPopupProps } from "@/ui/components";
 import { PopupRef } from "@/ui/components/Popup";
 import { createContext, ReactNode, useContext, useRef, useState } from "react";
 
