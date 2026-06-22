@@ -1,3 +1,5 @@
+import { useConfirm } from "@/contexts/ConfirmationProvider";
+import { useChainStore } from "@/stores/chain";
 import { Button, IconButton } from "@/ui/components";
 import { View } from "react-native";
 import Animated, { SlideInRight } from "react-native-reanimated";
@@ -10,7 +12,17 @@ type ControlsProps = {
 };
 
 const Controls = ({ isEditMode, onAddPress, onCancelEdit }: ControlsProps) => {
+  const { setChain } = useChainStore();
+  const { confirm } = useConfirm();
   const { theme } = useUnistyles();
+
+  const onRemoveAll = async () => {
+    const confirmed = await confirm();
+    if (!confirmed) return;
+    setChain([]);
+    onCancelEdit();
+  };
+
   return (
     <View style={styles.container}>
       {isEditMode && (
@@ -18,7 +30,7 @@ const Controls = ({ isEditMode, onAddPress, onCancelEdit }: ControlsProps) => {
           entering={SlideInRight}
           title="Remove all"
           variant="outline"
-          onPress={() => {}}
+          onPress={onRemoveAll}
         />
       )}
       <AnimatedIconButton

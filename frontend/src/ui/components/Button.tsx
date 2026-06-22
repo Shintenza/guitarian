@@ -24,7 +24,7 @@ type ButtonProps = {
 
 const Button = ({
   title,
-  variant,
+  variant = "solid",
   size = "regular",
   color,
   style,
