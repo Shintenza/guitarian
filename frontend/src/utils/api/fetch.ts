@@ -10,8 +10,8 @@ export async function apiFetch<T>(
   if (!connection) {
     throw new Error("missing connection details");
   }
-  const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
 
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
   const baseUrl = `http://${connection.host}:${connection.port}`;
   const url = `${baseUrl}/${cleanEndpoint}`;
 
@@ -27,11 +27,26 @@ export async function apiFetch<T>(
   const response = await fetch(url, config);
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
+    const errorText = await response.text();
+    let errorData = null;
+    try {
+      errorData = errorText ? JSON.parse(errorText) : null;
+    } catch {
+      //empty
+    }
     throw new Error(errorData?.message || `HTTP error: ${response.status}`);
   }
 
-  const responseJson = await response.json();
+  if (response.status === 204) {
+    return null as unknown as T;
+  }
 
-  return camelcaseKeys(responseJson, { deep: true }) as Promise<T>;
+  const text = await response.text();
+
+  if (!text) {
+    return null as unknown as T;
+  }
+
+  const responseJson = JSON.parse(text);
+  return camelcaseKeys(responseJson, { deep: true }) as T;
 }

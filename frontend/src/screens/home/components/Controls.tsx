@@ -1,3 +1,4 @@
+import { useRemoveAllPlugins } from "@/api/plugins";
 import { useConfirm } from "@/contexts/ConfirmationProvider";
 import { useChainStore } from "@/stores/chain";
 import { Button, IconButton } from "@/ui/components";
@@ -12,6 +13,7 @@ type ControlsProps = {
 };
 
 const Controls = ({ isEditMode, onAddPress, onCancelEdit }: ControlsProps) => {
+  const { mutateAsync: removeAllPlugins } = useRemoveAllPlugins();
   const { setChain } = useChainStore();
   const { confirm } = useConfirm();
   const { theme } = useUnistyles();
@@ -19,7 +21,12 @@ const Controls = ({ isEditMode, onAddPress, onCancelEdit }: ControlsProps) => {
   const onRemoveAll = async () => {
     const confirmed = await confirm();
     if (!confirmed) return;
-    setChain([]);
+    try {
+      await removeAllPlugins();
+      setChain([]);
+    } catch (e) {
+      console.log(e);
+    }
     onCancelEdit();
   };
 

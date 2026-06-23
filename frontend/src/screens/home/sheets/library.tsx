@@ -1,4 +1,5 @@
-import { useAllPlugins } from "@/api/plugins";
+import { useAddPlugin, useAllPlugins } from "@/api/plugins";
+import { PluginMetadata } from "@/api/plugins/types";
 import { useChainStore } from "@/stores/chain";
 import { Text } from "@/ui/components";
 import LibraryPluginCard from "@/ui/components/cards/LibraryPluginCard";
@@ -10,7 +11,20 @@ type LibrarySheetProps = Omit<HomeScreenSheetProps, "children">;
 
 const LibrarySheet = (props: LibrarySheetProps) => {
   const { data } = useAllPlugins();
-  const { addNode } = useChainStore();
+  const { addNode, chain } = useChainStore();
+  const { mutateAsync: addPlugin, isPending } = useAddPlugin();
+
+  const onPluginAdd = async (plugin: PluginMetadata) => {
+    try {
+      const chainItem = await addPlugin({
+        plugin_uri: plugin.uri,
+        position: chain.length,
+      });
+
+      addNode(chainItem);
+    } catch (e) {}
+  };
+
   return (
     <HomeScreenSheet {...props}>
       <FlatList
@@ -32,7 +46,7 @@ const LibrarySheet = (props: LibrarySheetProps) => {
             <LibraryPluginCard
               name={plugin.name}
               effectClass={plugin.class}
-              onPress={() => addNode(plugin)}
+              onPress={() => onPluginAdd(plugin)}
             />
           </View>
         )}

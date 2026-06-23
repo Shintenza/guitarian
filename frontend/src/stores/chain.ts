@@ -1,22 +1,17 @@
-import { PluginMetadata } from "@/api/plugins/types";
-import * as Crypto from "expo-crypto";
+import { ChainPlugin } from "@/types/plugins";
 import { useMemo } from "react";
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 
-export type ChainItem = PluginMetadata & {
-  id: string;
-};
-
 type ChainState = {
   presetName: string;
-  initialChain: ChainItem[];
-  chain: ChainItem[];
-  addNode: (plugin: PluginMetadata) => void;
-  removeNode: (uri: string) => void;
+  initialChain: ChainPlugin[];
+  chain: ChainPlugin[];
+  addNode: (plugin: ChainPlugin) => void;
+  removeNode: (id: string) => void;
   moveNode: (from: number, to: number) => void;
   clearChain: () => void;
-  setChain: (plugins: ChainItem[]) => void;
+  setChain: (plugins: ChainPlugin[]) => void;
 };
 
 export const chainStore = create<ChainState>((set) => ({
@@ -27,13 +22,13 @@ export const chainStore = create<ChainState>((set) => ({
   addNode: (plugin) =>
     set((state) => {
       return {
-        chain: [...state.chain, { id: Crypto.randomUUID(), ...plugin }],
+        chain: [...state.chain, plugin],
       };
     }),
 
-  removeNode: (uri) =>
+  removeNode: (id) =>
     set((state) => ({
-      chain: state.chain.filter((node) => node.uri !== uri),
+      chain: state.chain.filter((node) => node.id !== id),
     })),
 
   moveNode: (fromIndex: number, toIndex: number) =>

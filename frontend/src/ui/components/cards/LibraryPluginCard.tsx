@@ -1,6 +1,7 @@
+import { EffectClass } from "@/types/plugins";
 import Text from "@/ui/components/text/Text";
 import { getEffectUIConfig } from "@/ui/effects/definitions";
-import { EffectClass } from "@/ui/effects/types";
+import { withHaptics } from "@/utils/haptics";
 import { MaterialDesignIcons } from "@react-native-vector-icons/material-design-icons";
 import { Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
@@ -19,7 +20,7 @@ const LibraryPluginCard = ({
   const { iconName, color } = getEffectUIConfig(effectClass);
 
   return (
-    <Pressable onPress={onPress}>
+    <Pressable onPress={withHaptics(onPress)}>
       <View style={styles.container}>
         <View style={styles.iconContainer(color)}>
           <MaterialDesignIcons name={iconName} color={color} size={48} />

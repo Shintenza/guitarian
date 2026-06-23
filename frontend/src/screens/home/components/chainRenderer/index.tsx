@@ -35,7 +35,9 @@ const ChainRenderer = () => {
       for (let i = 0; i < missing; i++) {
         padded.push({
           id: `${GHOST_NODE_PREFIX}${i}`,
-          uri: GHOST_NODE_PREFIX,
+          metadata: {
+            uri: GHOST_NODE_PREFIX,
+          },
           isGhost: true,
         } as GridItem);
       }
@@ -56,19 +58,14 @@ const ChainRenderer = () => {
   const renderItem = useCallback<SortableGridRenderItem<GridItem>>(
     ({ item }) => {
       return (
-        <Sortable.Touchable
-          onLongPress={() => {
-            console.log(" THIS IS A LONG PRESS!");
-          }}
-        >
+        <Sortable.Touchable>
           <Sortable.Handle mode={item.isGhost ? "fixed-order" : "draggable"}>
             {item.isGhost ? (
               <View style={{ flex: 1, opacity: 0 }} pointerEvents="none" />
             ) : (
               <ChainCard
-                name={item.name}
-                effectClass={item.class}
-                key={item.uri}
+                name={item.metadata.name}
+                effectClass={item.metadata.class}
               />
             )}
           </Sortable.Handle>

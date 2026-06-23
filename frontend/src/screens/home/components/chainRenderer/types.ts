@@ -1,3 +1,3 @@
-import { ChainItem } from "@/stores/chain";
+import { ChainPlugin } from "@/types/plugins";
 
-export type GridItem = ChainItem & { isGhost?: boolean };
+export type GridItem = ChainPlugin & { isGhost?: boolean };
