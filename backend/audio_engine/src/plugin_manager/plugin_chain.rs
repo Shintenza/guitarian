@@ -60,9 +60,14 @@ impl PluginChain {
     self
       .producer
       .try_push(AudioCommand::RemovePlugin(plugin_id));
-    if let Some(index) = self.chain.iter().position(|p| p.id == 2) {
+    if let Some(index) = self.chain.iter().position(|p| p.id == plugin_id) {
       self.chain.remove(index);
     }
+  }
+
+  pub fn clear(&mut self) {
+    self.producer.try_push(AudioCommand::RemoveAll);
+    self.chain.clear();
   }
 
   pub fn set_plugin_port_value(&self, plugin_id: u32, port_id: u32, new_value: f32) {

@@ -107,6 +107,11 @@ impl EngineClient {
     Ok(data)
   }
 
+  pub async fn clear(&self) -> Result<(), RequestCommandError> {
+    self.send_raw(RequestCommand::RemoveAll).await?;
+    Ok(())
+  }
+
   pub async fn get_current_state(&self) -> Result<Vec<ChainItem>, RequestCommandError> {
     let response = self.send_raw(RequestCommand::GetCurrentState).await?;
     let RequestCommandResponse::CurrentState(data) = response else {

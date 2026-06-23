@@ -51,6 +51,10 @@ impl PluginManager {
     plugins
   }
 
+  pub fn clear(&mut self) {
+    self.plugin_chain.clear();
+  }
+
   pub fn set_plugin_port_value(&self, plugin_id: u32, port_id: u32, new_value: f32) {
     self
       .plugin_chain

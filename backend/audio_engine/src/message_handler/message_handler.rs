@@ -55,6 +55,10 @@ impl MessageHandler {
         let current_state = self.plugin_manager.get_current_chain_state();
         response = RequestCommandResponse::CurrentState(current_state);
       }
+      RequestCommand::RemoveAll => {
+        self.plugin_manager.clear();
+        response = RequestCommandResponse::RemoveAll
+      }
       RequestCommand::LoadPlugin(plugin_uri, position) => {
         let load_result = self.plugin_manager.load_plugin(position, &plugin_uri);
         match load_result {

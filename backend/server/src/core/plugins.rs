@@ -32,6 +32,13 @@ pub async fn list_plugins(
   }
 }
 
+pub async fn remove_plugins(State(ctx): State<AppContext>) -> Result<StatusCode, StatusCode> {
+  match ctx.engine_client.clear().await {
+    Ok(_) => Ok(StatusCode::NO_CONTENT),
+    Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+  }
+}
+
 pub async fn add_plugin(
   State(ctx): State<AppContext>,
   Json(payload): Json<AddPluginRequest>,

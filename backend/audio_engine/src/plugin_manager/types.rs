@@ -32,6 +32,7 @@ pub enum AudioCommand {
   AddPlugin(usize, PluginInstanceWithId),
   LoadPreset(Vec<PluginInstanceWithId>),
   RemovePlugin(u32),
+  RemoveAll,
 }
 
 pub enum PluginActionError {

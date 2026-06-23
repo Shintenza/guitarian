@@ -51,6 +51,9 @@ impl AudioProcessor {
             self.active_plugins.remove(indeks);
           }
         }
+        AudioCommand::RemoveAll => {
+          self.active_plugins.clear();
+        }
       }
     }
   }

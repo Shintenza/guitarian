@@ -7,12 +7,13 @@ pub enum RequestCommand {
   GetAvailablePlugins,
   GetCurrentState,
   LoadPlugin(String, usize),
-  LoadPreset(Vec<PresetItem>)
+  LoadPreset(Vec<PresetItem>),
+  RemoveAll,
 }
 
 #[derive(Encode, Decode)]
 pub enum PushCommand {
-  SetParam(u32, u32, f32)
+  SetParam(u32, u32, f32),
 }
 
 #[derive(Encode, Decode)]
@@ -20,18 +21,21 @@ pub enum RequestCommandResponse {
   AvailablePlugins(Vec<PluginMetadata>),
   CurrentState(Vec<ChainItem>),
   LoadedPlugin(ChainItem),
+  RemoveAll,
   Error(String),
 }
 
 pub enum RequestCommandError {
   DataFormatError,
-  ConnectionError
+  ConnectionError,
 }
 
 pub trait CommandWithResponse {
   type Response;
   fn into_request(self) -> RequestCommand;
-  fn extract_response(response: RequestCommandResponse) -> Result<Self::Response, RequestCommandError>;
+  fn extract_response(
+    response: RequestCommandResponse,
+  ) -> Result<Self::Response, RequestCommandError>;
 }
 
 #[derive(Encode, Decode)]
@@ -45,6 +49,5 @@ pub struct ParamChangedPayload {
 pub enum StateChangeEvent {
   PluginLoaded,
   PresetLoaded,
-  ParamChanged(ParamChangedPayload)
+  ParamChanged(ParamChangedPayload),
 }
-
