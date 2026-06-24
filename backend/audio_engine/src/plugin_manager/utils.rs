@@ -1,9 +1,28 @@
 use atomic_float::AtomicF32;
-use jack::jack_sys::JackPortRegistrationCallback;
-use livi::Plugin;
-use shared::data::{ControlMetadata, ControlState, PluginMetadata};
+use livi::{Plugin, PortValueType, ScalePoints};
+use shared::data::{ControlMetadata, ControlState, ControlType, PluginMetadata, ScalePoint};
 
 use crate::plugin_manager::types::PortConfig;
+
+pub fn get_control_type(port_value: &PortValueType) -> ControlType {
+  match port_value {
+    PortValueType::Continuous => ControlType::Continuous,
+    PortValueType::Integer => ControlType::Integer,
+    PortValueType::Toggled => ControlType::Toggled,
+    PortValueType::Enumeration => ControlType::Enumeration,
+  }
+}
+
+pub fn get_scale_points_vec(scale_points: ScalePoints) -> Vec<ScalePoint> {
+  scale_points
+    .into_iter()
+    .map(|sp| {
+      let label = sp.label().as_str().unwrap_or("").to_string();
+      let value = sp.value().as_float().unwrap_or(0.0);
+      ScalePoint { label, value }
+    })
+    .collect()
+}
 
 pub fn get_lv2_plugin_controls_metadata(plugin: &Plugin) -> Vec<ControlMetadata> {
   let mut controls_metadata: Vec<ControlMetadata> = Vec::new();
@@ -14,6 +33,8 @@ pub fn get_lv2_plugin_controls_metadata(plugin: &Plugin) -> Vec<ControlMetadata>
       min_value: port.min_value.unwrap_or_default(),
       max_value: port.max_value.unwrap_or_default(),
       default_value: port.default_value,
+      control_type: get_control_type(&port.port_value_type),
+      scale_points: get_scale_points_vec(port.scale_points),
     };
     controls_metadata.push(metadata);
   }
