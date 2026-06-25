@@ -55,6 +55,12 @@ impl PluginManager {
     self.plugin_chain.clear();
   }
 
+  pub fn change_plugin_position(&mut self, plugin_id: u32, new_position: usize) {
+    self
+      .plugin_chain
+      .change_plugin_position(plugin_id, new_position);
+  }
+
   pub fn set_plugin_port_value(&self, plugin_id: u32, port_id: u32, new_value: f32) {
     self
       .plugin_chain

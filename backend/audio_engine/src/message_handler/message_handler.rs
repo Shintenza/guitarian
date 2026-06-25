@@ -55,6 +55,16 @@ impl MessageHandler {
         let current_state = self.plugin_manager.get_current_chain_state();
         response = RequestCommandResponse::CurrentState(current_state);
       }
+      RequestCommand::UnloadPlugin(id) => match self.plugin_manager.unload_plugin(id) {
+        Ok(_) => response = RequestCommandResponse::UnloadPlugin,
+        Err(_e) => response = RequestCommandResponse::Error("failed to unload plugin".to_string()),
+      },
+      RequestCommand::ChangePluginPosition(plugin_id, new_position) => {
+        self
+          .plugin_manager
+          .change_plugin_position(plugin_id, new_position);
+        response = RequestCommandResponse::ChangePluginPosition;
+      }
       RequestCommand::RemoveAll => {
         self.plugin_manager.clear();
         response = RequestCommandResponse::RemoveAll

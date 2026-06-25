@@ -28,9 +28,15 @@ pub struct PluginInstanceWithId {
   pub instance: Box<dyn PluginInstance>,
 }
 
+pub enum ChainOperationError {
+  InvalidArguments,
+  BufferError,
+}
+
 pub enum AudioCommand {
   AddPlugin(usize, PluginInstanceWithId),
   LoadPreset(Vec<PluginInstanceWithId>),
+  ChangePluginPosition(u32, usize),
   RemovePlugin(u32),
   RemoveAll,
 }

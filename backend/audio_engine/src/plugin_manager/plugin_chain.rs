@@ -1,9 +1,17 @@
 use ringbuf::{HeapProd, traits::Producer};
-use std::sync::{Arc, atomic::Ordering};
+use std::{
+  io::Chain,
+  sync::{Arc, atomic::Ordering},
+};
 
-use crate::plugin_manager::{
-  types::{AudioCommand, InitializedPlugin, InstanceConfig, PluginInstanceWithId},
-  utils::controls_state_to_port_config,
+use crate::{
+  plugin_manager::{
+    types::{
+      AudioCommand, ChainOperationError, InitializedPlugin, InstanceConfig, PluginInstanceWithId,
+    },
+    utils::controls_state_to_port_config,
+  },
+  utils::vector::move_item,
 };
 
 pub struct PluginChain {
@@ -65,9 +73,37 @@ impl PluginChain {
     }
   }
 
-  pub fn clear(&mut self) {
-    self.producer.try_push(AudioCommand::RemoveAll);
+  pub fn change_plugin_position(
+    &mut self,
+    plugin_id: u32,
+    new_position: usize,
+  ) -> Result<(), ChainOperationError> {
+    let exists = self.chain.iter().any(|x| x.id == plugin_id);
+    if !exists {
+      return Err(ChainOperationError::InvalidArguments);
+    }
+
+    if new_position as usize >= self.chain.len() {
+      return Err(ChainOperationError::InvalidArguments);
+    }
+
+    self
+      .producer
+      .try_push(AudioCommand::ChangePluginPosition(plugin_id, new_position))
+      .map_err(|_| ChainOperationError::BufferError)?;
+
+    let _ = move_item(&mut self.chain, new_position, |item| item.id == plugin_id);
+
+    Ok(())
+  }
+
+  pub fn clear(&mut self) -> Result<(), ChainOperationError> {
+    self
+      .producer
+      .try_push(AudioCommand::RemoveAll)
+      .map_err(|_| ChainOperationError::BufferError)?;
     self.chain.clear();
+    Ok(())
   }
 
   pub fn set_plugin_port_value(&self, plugin_id: u32, port_id: u32, new_value: f32) {

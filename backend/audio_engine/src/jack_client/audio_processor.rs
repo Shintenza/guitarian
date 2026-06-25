@@ -1,9 +1,12 @@
 use jack::{AudioIn, AudioOut, Client, Control, Port, ProcessHandler, ProcessScope};
 use ringbuf::{HeapCons, traits::Consumer};
 
-use crate::plugin_manager::types::{
-  AudioCommand::{self},
-  PluginInstanceWithId,
+use crate::{
+  plugin_manager::types::{
+    AudioCommand::{self},
+    PluginInstanceWithId,
+  },
+  utils::vector::move_item,
 };
 
 const INITIAL_ACTIVE_PLUGINS_CAPACITY: usize = 128;
@@ -50,6 +53,9 @@ impl AudioProcessor {
           {
             self.active_plugins.remove(indeks);
           }
+        }
+        AudioCommand::ChangePluginPosition(id, new_position) => {
+          let _ = move_item(&mut self.active_plugins, new_position, |item| item.id == id);
         }
         AudioCommand::RemoveAll => {
           self.active_plugins.clear();

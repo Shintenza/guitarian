@@ -8,6 +8,8 @@ pub enum RequestCommand {
   GetCurrentState,
   LoadPlugin(String, usize),
   LoadPreset(Vec<PresetItem>),
+  ChangePluginPosition(u32, usize),
+  UnloadPlugin(u32),
   RemoveAll,
 }
 
@@ -21,6 +23,8 @@ pub enum RequestCommandResponse {
   AvailablePlugins(Vec<PluginMetadata>),
   CurrentState(Vec<ChainItem>),
   LoadedPlugin(ChainItem),
+  ChangePluginPosition,
+  UnloadPlugin,
   RemoveAll,
   Error(String),
 }

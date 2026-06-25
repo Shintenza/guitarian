@@ -1,6 +1,7 @@
 mod jack_client;
 mod message_handler;
 mod plugin_manager;
+mod utils;
 
 use crate::{jack_client::client::AudioEngine, message_handler::message_handler::MessageHandler};
 
@@ -27,7 +28,6 @@ async fn main() {
   audio_engine.run();
 
   message_handler.listen().await;
-
 
   audio_engine.deactivate();
 }

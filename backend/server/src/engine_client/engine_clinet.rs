@@ -112,6 +112,27 @@ impl EngineClient {
     Ok(())
   }
 
+  pub async fn unload_plugin(&self, plugin_id: u32) -> Result<(), RequestCommandError> {
+    self
+      .send_raw(RequestCommand::UnloadPlugin(plugin_id))
+      .await?;
+    Ok(())
+  }
+
+  pub async fn change_plugin_position(
+    &self,
+    plugin_id: u32,
+    new_position: usize,
+  ) -> Result<(), RequestCommandError> {
+    self
+      .send_raw(RequestCommand::ChangePluginPosition(
+        plugin_id,
+        new_position,
+      ))
+      .await?;
+    Ok(())
+  }
+
   pub async fn get_current_state(&self) -> Result<Vec<ChainItem>, RequestCommandError> {
     let response = self.send_raw(RequestCommand::GetCurrentState).await?;
     let RequestCommandResponse::CurrentState(data) = response else {

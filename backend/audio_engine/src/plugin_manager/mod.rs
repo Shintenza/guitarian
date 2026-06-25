@@ -1,6 +1,6 @@
-pub mod types;
 pub mod manager;
+mod plugin_chain;
 pub mod plugin_instance;
 mod plugin_repository;
-mod plugin_chain;
+pub mod types;
 mod utils;
