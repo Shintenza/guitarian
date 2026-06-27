@@ -5,7 +5,9 @@ import { createContext, ReactNode, useContext, useRef, useState } from "react";
 type ConfirmationPopupOptions = Pick<
   ConfirmationPopupProps,
   "title" | "confirmationTitle" | "rejectionTitle"
->;
+> & {
+  onConfirm?: () => Promise<void>;
+};
 
 type ConfirmContextType = {
   confirm: (options?: ConfirmationPopupOptions) => Promise<boolean>;
@@ -15,16 +17,19 @@ const ConfirmContext = createContext<ConfirmContextType | null>(null);
 
 export const ConfirmationProvider = ({ children }: { children: ReactNode }) => {
   const popupRef = useRef<PopupRef>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
   const [popupProps, setPopupProps] = useState<null | ConfirmationPopupOptions>(
     null,
   );
 
   const resolver = useRef<((value: boolean) => void) | null>(null);
+  const onConfirm = useRef<(() => Promise<void>) | null>(null);
 
   const confirm = (
     options: ConfirmationPopupOptions = {},
   ): Promise<boolean> => {
     popupRef.current?.open();
+    onConfirm.current = options.onConfirm ?? null;
     setPopupProps(options);
 
     return new Promise((resolve) => {
@@ -32,8 +37,13 @@ export const ConfirmationProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const handleChoice = (choice: boolean) => {
+  const handleChoice = async (choice: boolean) => {
+    if (choice && onConfirm.current) {
+      setConfirmLoading(true);
+      await onConfirm.current();
+    }
     popupRef.current?.close();
+    setConfirmLoading(false);
     if (resolver.current) {
       resolver.current(choice);
       resolver.current = null;
@@ -46,6 +56,7 @@ export const ConfirmationProvider = ({ children }: { children: ReactNode }) => {
       <ConfirmationPopup
         {...popupProps}
         ref={popupRef}
+        confirmButtonLoading={confirmLoading}
         onConfirm={() => handleChoice(true)}
         onReject={() => handleChoice(false)}
       />

@@ -5,23 +5,35 @@ import { withHaptics } from "@/utils/haptics";
 import { MaterialDesignIcons } from "@react-native-vector-icons/material-design-icons";
 import { Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import Spinner from "../Spinner";
 
 type LibraryPluginCardProps = {
   name: string;
   effectClass: EffectClass;
+  disabled?: boolean;
+  loading?: boolean;
   onPress: () => void;
 };
 
 const LibraryPluginCard = ({
+  loading,
+  disabled,
   name,
   effectClass,
   onPress,
 }: LibraryPluginCardProps) => {
   const { iconName, color } = getEffectUIConfig(effectClass);
 
+  const shouldShowOverlay = loading || disabled;
+
   return (
-    <Pressable onPress={withHaptics(onPress)}>
+    <Pressable onPress={withHaptics(onPress)} disabled={shouldShowOverlay}>
       <View style={styles.container}>
+        {shouldShowOverlay && (
+          <View style={styles.disabledOverlay({ loading })}>
+            {loading && <Spinner size="large" />}
+          </View>
+        )}
         <View style={styles.iconContainer(color)}>
           <MaterialDesignIcons name={iconName} color={color} size={48} />
         </View>
@@ -39,12 +51,13 @@ const LibraryPluginCard = ({
     </Pressable>
   );
 };
+const BORDER_RADIUS = 8;
 
 const styles = StyleSheet.create((theme) => ({
   container: {
     backgroundColor: theme.colors.background.tertiary,
     padding: 16,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS,
     alignItems: "center",
     gap: 12,
   },
@@ -69,6 +82,16 @@ const styles = StyleSheet.create((theme) => ({
     gap: 8,
     alignItems: "center",
   },
+  disabledOverlay: ({ loading }: Pick<LibraryPluginCardProps, "loading">) => ({
+    position: "absolute",
+    inset: 0,
+    zIndex: 2,
+    opacity: loading ? 0.8 : 0.7,
+    backgroundColor: theme.colors.background.main,
+    borderRadius: BORDER_RADIUS,
+    justifyContent: "center",
+    alignItems: "center",
+  }),
 }));
 
 export default LibraryPluginCard;

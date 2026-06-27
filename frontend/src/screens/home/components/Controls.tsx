@@ -5,6 +5,7 @@ import { Button, IconButton } from "@/ui/components";
 import { View } from "react-native";
 import Animated, { SlideInRight } from "react-native-reanimated";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { toast } from "sonner-native";
 
 type ControlsProps = {
   isEditMode: boolean;
@@ -19,15 +20,16 @@ const Controls = ({ isEditMode, onAddPress, onCancelEdit }: ControlsProps) => {
   const { theme } = useUnistyles();
 
   const onRemoveAll = async () => {
-    const confirmed = await confirm();
-    if (!confirmed) return;
-    try {
-      await removeAllPlugins();
-      setChain([]);
-    } catch (e) {
-      console.log(e);
-    }
-    onCancelEdit();
+    await confirm({
+      onConfirm: async () => {
+        try {
+          await removeAllPlugins();
+          setChain([]);
+        } catch {
+          toast.error("Failed to clear the chain");
+        }
+      },
+    });
   };
 
   return (

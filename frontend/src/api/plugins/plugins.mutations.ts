@@ -2,7 +2,7 @@ import { apiFetch } from "@/utils/api/fetch";
 import { AddPluginRequest, AddPluginResponse } from "./types";
 
 export const addPlugin = async (data: AddPluginRequest) => {
-  const result = await apiFetch<AddPluginResponse>("/plugins", {
+  const result = await apiFetch<AddPluginResponse>("/chain", {
     body: JSON.stringify(data),
     method: "POST",
   });
@@ -11,5 +11,5 @@ export const addPlugin = async (data: AddPluginRequest) => {
 };
 
 export const removeAllPlugins = async () => {
-  await apiFetch("/plugins", { method: "DELETE" });
+  await apiFetch("/chain", { method: "DELETE" });
 };

@@ -7,7 +7,8 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import Spinner from "./Spinner";
 import { Text } from "./text";
 
 type ButtonVariant = "solid" | "outline";
@@ -15,6 +16,7 @@ type ButtonSize = "regular";
 
 type ButtonProps = {
   title: string;
+  loading?: boolean;
   variant?: ButtonVariant;
   size?: ButtonSize;
   color?: ColorValue;
@@ -28,8 +30,10 @@ const Button = ({
   size = "regular",
   color,
   style,
+  loading,
   ...rest
 }: ButtonProps) => {
+  const { theme } = useUnistyles();
   styles.useVariants({
     variant,
     size,
@@ -37,7 +41,18 @@ const Button = ({
 
   return (
     <Pressable {...rest} style={[styles.container({ color }), style]}>
-      <Text>{title}</Text>
+      {loading && (
+        <View style={styles.spinnerContainer}>
+          <Spinner
+            color={
+              variant === "solid"
+                ? theme.colors.text.primary
+                : (color ?? theme.colors.orange)
+            }
+          />
+        </View>
+      )}
+      <Text style={{ opacity: loading ? 0 : 1 }}>{title}</Text>
     </Pressable>
   );
 };
@@ -65,6 +80,11 @@ const styles = StyleSheet.create((theme) => ({
       },
     },
   }),
+  spinnerContainer: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 }));
 
 export default Button;

@@ -11,6 +11,7 @@ export type ConfirmationPopupProps = {
   title?: string;
   confirmationTitle?: string;
   rejectionTitle?: string;
+  confirmButtonLoading?: boolean;
   onConfirm: () => void;
   onReject?: () => void;
 } & Omit<PopupProps, "children">;
@@ -20,6 +21,7 @@ const ConfirmationPopup = ({
   title = "Are you sure?",
   confirmationTitle = "Yes",
   rejectionTitle = "No",
+  confirmButtonLoading,
   onConfirm,
   onReject,
 }: ConfirmationPopupProps) => {
@@ -54,6 +56,7 @@ const ConfirmationPopup = ({
           title={confirmationTitle}
           onPress={onConfirmPress}
           style={styles.button}
+          loading={confirmButtonLoading}
         />
       </View>
     </Popup>
