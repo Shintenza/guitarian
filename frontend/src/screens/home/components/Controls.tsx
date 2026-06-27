@@ -1,6 +1,5 @@
-import { useRemoveAllPlugins } from "@/api/plugins";
+import { useClearChain } from "@/api/chain";
 import { useConfirm } from "@/contexts/ConfirmationProvider";
-import { useChainStore } from "@/stores/chain";
 import { Button, IconButton } from "@/ui/components";
 import { View } from "react-native";
 import Animated, { SlideInRight } from "react-native-reanimated";
@@ -14,8 +13,7 @@ type ControlsProps = {
 };
 
 const Controls = ({ isEditMode, onAddPress, onCancelEdit }: ControlsProps) => {
-  const { mutateAsync: removeAllPlugins } = useRemoveAllPlugins();
-  const { setChain } = useChainStore();
+  const { mutateAsync: clearChain } = useClearChain();
   const { confirm } = useConfirm();
   const { theme } = useUnistyles();
 
@@ -23,8 +21,7 @@ const Controls = ({ isEditMode, onAddPress, onCancelEdit }: ControlsProps) => {
     await confirm({
       onConfirm: async () => {
         try {
-          await removeAllPlugins();
-          setChain([]);
+          await clearChain();
         } catch {
           toast.error("Failed to clear the chain");
         }

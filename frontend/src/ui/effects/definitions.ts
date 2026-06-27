@@ -1,4 +1,5 @@
-import { EffectClass, EffectUIConfig } from "./types";
+import { EffectClass } from "@/types/plugins";
+import { EffectUIConfig } from "./types";
 
 export const effectUI: Record<EffectClass, EffectUIConfig> = {
   Distortion: {

@@ -1,4 +1,4 @@
-import { ChainPlugin, EffectClass } from "@/types/plugins";
+import { EffectClass } from "@/types/plugins";
 
 export type ControlMetadata = {
   id: number;
@@ -17,13 +17,4 @@ export type PluginMetadata = {
 
 export type GetAllPluginsResponse = {
   plugins: PluginMetadata[];
-};
-
-export type AddPluginRequest = {
-  plugin_uri: string;
-  position: number;
-};
-
-export type AddPluginResponse = {
-  plugin: ChainPlugin;
 };

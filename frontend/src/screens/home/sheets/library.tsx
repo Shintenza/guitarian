@@ -1,6 +1,6 @@
-import { useAddPlugin, useAllPlugins } from "@/api/plugins";
+import { useAppendChainItem } from "@/api/chain";
+import { useAllPlugins } from "@/api/plugins";
 import { PluginMetadata } from "@/api/plugins/types";
-import { useChainStore } from "@/stores/chain";
 import { Text } from "@/ui/components";
 import LibraryPluginCard from "@/ui/components/cards/LibraryPluginCard";
 import { useCallback } from "react";
@@ -13,23 +13,23 @@ type LibrarySheetProps = Omit<HomeScreenSheetProps, "children">;
 
 const LibrarySheet = (props: LibrarySheetProps) => {
   const { data } = useAllPlugins();
-  const { addNode, chain } = useChainStore();
-  const { mutateAsync: addPlugin, isPending, variables } = useAddPlugin();
+  const {
+    mutateAsync: appendChainItem,
+    isPending,
+    variables,
+  } = useAppendChainItem();
 
   const onPluginAdd = useCallback(
     async (plugin: PluginMetadata) => {
       try {
-        const chainItem = await addPlugin({
-          plugin_uri: plugin.uri,
-          position: chain.length,
+        await appendChainItem({
+          pluginUri: plugin.uri,
         });
-
-        addNode(chainItem);
       } catch {
         toast.error("Failed to load the plugin");
       }
     },
-    [addNode, addPlugin, chain.length],
+    [appendChainItem],
   );
 
   const renderItem: ListRenderItem<PluginMetadata> = useCallback(
@@ -38,13 +38,13 @@ const LibrarySheet = (props: LibrarySheetProps) => {
         <LibraryPluginCard
           name={plugin.name}
           effectClass={plugin.class}
-          loading={variables?.plugin_uri === plugin.uri && isPending}
+          loading={variables?.pluginUri === plugin.uri && isPending}
           disabled={isPending}
           onPress={() => onPluginAdd(plugin)}
         />
       </View>
     ),
-    [isPending, onPluginAdd, variables?.plugin_uri],
+    [isPending, onPluginAdd, variables?.pluginUri],
   );
 
   return (

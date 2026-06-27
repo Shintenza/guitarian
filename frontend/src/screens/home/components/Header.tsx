@@ -62,7 +62,7 @@ const Header = ({
               transform: [{ rotate: `${isPresetsModalActive ? 180 : 0}deg` }],
               transitionDuration: 200,
               transitionProperty: ["transform"],
-            },
+            } as any,
             styles.chevronStyle,
           ]}
         />

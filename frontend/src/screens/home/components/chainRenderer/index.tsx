@@ -1,3 +1,4 @@
+import { useChainReorder } from "@/api/chain";
 import { useChainStore } from "@/stores/chain";
 import ChainCard from "@/ui/components/cards/ChainCard";
 import { CARD_SIZES } from "@/ui/components/cards/size";
@@ -11,6 +12,7 @@ import Sortable, {
   SortableGridRenderItem,
 } from "react-native-sortables";
 import { StyleSheet } from "react-native-unistyles";
+import { toast } from "sonner-native";
 import ChainPath from "./chainPath";
 import { GridItem } from "./types";
 import { useChainDragStartegy } from "./useChainDragStartegy";
@@ -21,10 +23,13 @@ const PADDING_SIZE = 24;
 const GRID_GAP = 12;
 
 const ChainRenderer = () => {
+  const { mutateAsync: reorderChain, isPending: isReorderPending } =
+    useChainReorder();
+
   const { width } = useWindowDimensions();
   const scrollableRef = useAnimatedRef<Animated.ScrollView>();
   const cardHeight = useResponsiveValue(CARD_SIZES[CardTypes.chainCard].height);
-  const { chain, moveNode } = useChainStore();
+  const { chain } = useChainStore();
 
   const visualData = useMemo(() => {
     const padded: GridItem[] = [...chain];
@@ -47,12 +52,19 @@ const ChainRenderer = () => {
   }, [chain]);
 
   const handleOrderChange: ActiveItemDroppedCallback = useCallback(
-    (data) => {
+    async (data) => {
       const fromIndexLogical = toLogical(data.fromIndex, COLUMNS);
       const toIndexLogical = toLogical(data.toIndex, COLUMNS);
-      moveNode(fromIndexLogical, toIndexLogical);
+      try {
+        await reorderChain({
+          indexFrom: fromIndexLogical,
+          indexTo: toIndexLogical,
+        });
+      } catch {
+        toast.error("Failed to reorder chain");
+      }
     },
-    [moveNode],
+    [reorderChain],
   );
 
   const renderItem = useCallback<SortableGridRenderItem<GridItem>>(
@@ -64,6 +76,7 @@ const ChainRenderer = () => {
               <View style={{ flex: 1, opacity: 0 }} pointerEvents="none" />
             ) : (
               <ChainCard
+                disabled={isReorderPending}
                 name={item.metadata.name}
                 effectClass={item.metadata.class}
               />
@@ -72,7 +85,7 @@ const ChainRenderer = () => {
         </Sortable.Touchable>
       );
     },
-    [],
+    [isReorderPending],
   );
 
   const startY = PADDING_SIZE + cardHeight / 2;
@@ -90,6 +103,7 @@ const ChainRenderer = () => {
       />
       <Animated.ScrollView ref={scrollableRef} style={styles.gridContainer}>
         <Sortable.Grid
+          sortEnabled={!isReorderPending}
           data={visualData}
           columns={COLUMNS}
           rowGap={GRID_GAP}

@@ -1,9 +1,14 @@
 import { configStore } from "@/stores/config";
 import camelcaseKeys from "camelcase-keys";
+import snakecaseKeys from "snakecase-keys";
+
+type FetchOptions = Omit<RequestInit, "body"> & {
+  body?: Record<string, unknown>;
+};
 
 export async function apiFetch<T>(
   endpoint: string,
-  options: RequestInit = {},
+  options: FetchOptions = {},
 ): Promise<T> {
   const connection = configStore.getState().connection;
 
@@ -15,8 +20,13 @@ export async function apiFetch<T>(
   const baseUrl = `http://${connection.host}:${connection.port}`;
   const url = `${baseUrl}/${cleanEndpoint}`;
 
+  const requestBody = options.body
+    ? JSON.stringify(snakecaseKeys(options.body, { deep: true }))
+    : undefined;
+
   const config: RequestInit = {
     ...options,
+    body: requestBody,
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",

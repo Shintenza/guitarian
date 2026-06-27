@@ -13,10 +13,12 @@ export default function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Toaster />
       <GestureHandlerRootView>
         <QueryClientProvider client={queryClient}>
-          <ConfirmationProvider>{children}</ConfirmationProvider>
+          <ConfirmationProvider>
+            {children}
+            <Toaster />
+          </ConfirmationProvider>
         </QueryClientProvider>
       </GestureHandlerRootView>
     </ThemeProvider>

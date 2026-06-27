@@ -1,6 +1,6 @@
+import { EffectClass } from "@/types/plugins";
 import Text from "@/ui/components/text/Text";
 import { getEffectUIConfig } from "@/ui/effects/definitions";
-import { EffectClass } from "@/ui/effects/types";
 import { MaterialDesignIcons } from "@react-native-vector-icons/material-design-icons";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
@@ -10,13 +10,21 @@ import { CardTypes } from "./types";
 type ChainCardProps = {
   name: string;
   effectClass: EffectClass;
+  disabled?: boolean;
+  pendingDeletion?: boolean;
 };
 
-const ChainCard = ({ name, effectClass }: ChainCardProps) => {
+const ChainCard = ({
+  name,
+  effectClass,
+  pendingDeletion,
+  disabled,
+}: ChainCardProps) => {
   const { iconName, color } = getEffectUIConfig(effectClass);
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container({ pendingDeletion })}>
+      {disabled && <View style={styles.overlay} />}
       <View style={styles.iconContainer(color)}>
         <MaterialDesignIcons name={iconName} color={color} size={48} />
       </View>
@@ -30,7 +38,16 @@ const ChainCard = ({ name, effectClass }: ChainCardProps) => {
 };
 
 const styles = StyleSheet.create((theme) => ({
-  container: {
+  overlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: theme.colors.background.main,
+    opacity: 0.6,
+    zIndex: 2,
+  },
+  container: ({
+    pendingDeletion,
+  }: Pick<ChainCardProps, "pendingDeletion">) => ({
+    overflow: "hidden",
     backgroundColor: theme.colors.background.secondary,
     padding: 16,
     borderRadius: 8,
@@ -38,7 +55,8 @@ const styles = StyleSheet.create((theme) => ({
     gap: 12,
     width: CARD_SIZES[CardTypes.chainCard].width,
     height: CARD_SIZES[CardTypes.chainCard].height,
-  },
+    opacity: pendingDeletion ? 0.4 : 1,
+  }),
   iconContainer: (color: string) => ({
     borderRadius: 8,
     borderWidth: 3,
