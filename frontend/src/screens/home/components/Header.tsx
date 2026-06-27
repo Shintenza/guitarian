@@ -1,4 +1,4 @@
-import { useChainStore } from "@/stores/chain";
+import { usePresetStore } from "@/stores/preset";
 import { IconButton, Text } from "@/ui/components";
 import SaveIcon from "@expo/material-symbols/save.xml";
 import { Icon } from "@expo/ui";
@@ -29,7 +29,7 @@ const Header = ({
   onEdit,
   onPresetPress,
 }: HeaderProps) => {
-  const { presetName, isDirty } = useChainStore();
+  const { name, isDirty } = usePresetStore();
   const chevronProgress = useSharedValue(0);
 
   const onTitlePress = () => {
@@ -52,7 +52,7 @@ const Header = ({
   return (
     <View style={styles.container}>
       <Pressable style={styles.titleContainer} onPress={onTitlePress}>
-        <Text variant="semiBold">{presetName}</Text>
+        <Text variant="semiBold">{name}</Text>
         <AnimatedIcon
           name={"chevron-down"}
           color={theme.colors.text.primary}

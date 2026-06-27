@@ -1,5 +1,9 @@
 import { ChainPlugin } from "@/types/plugins";
 
+export type GetCurrentChainResponse = {
+  chain: ChainPlugin[];
+};
+
 export type UseChainReorderParams = {
   indexFrom: number;
   indexTo: number;

@@ -1,5 +1,8 @@
-import { useChainReorder, useRemoveChainItem } from "@/api/chain";
-import { useChainStore } from "@/stores/chain";
+import {
+  useChainReorder,
+  useCurrentChain,
+  useRemoveChainItem,
+} from "@/api/chain";
 import ChainCard from "@/ui/components/cards/ChainCard";
 import { CARD_SIZES } from "@/ui/components/cards/size";
 import { CardTypes } from "@/ui/components/cards/types";
@@ -39,7 +42,7 @@ const ChainRenderer = ({ isEditMode }: ChainRendererProps) => {
   const { width } = useWindowDimensions();
   const scrollableRef = useAnimatedRef<Animated.ScrollView>();
   const cardHeight = useResponsiveValue(CARD_SIZES[CardTypes.chainCard].height);
-  const { chain } = useChainStore();
+  const { data: chain = [] } = useCurrentChain();
 
   const visualData = useMemo(() => {
     const padded: GridItem[] = [...chain];
@@ -129,7 +132,7 @@ const ChainRenderer = ({ isEditMode }: ChainRendererProps) => {
       <ChainPath
         startY={startY}
         width={width}
-        chainLength={chain.length}
+        chainLength={chain?.length}
         numberOfColumns={COLUMNS}
         padding={10}
         stepHeight={stepHeight}
