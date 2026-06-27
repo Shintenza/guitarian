@@ -25,6 +25,10 @@ export const addChainItem = async (data: AddChainItemRequest) => {
   };
 };
 
+export const removeChainItem = async ({ pluginId }: { pluginId: number }) => {
+  await apiFetch(`/chain/item/${pluginId}`, { method: "DELETE" });
+};
+
 export const clearChain = async () => {
   await apiFetch("/chain", { method: "DELETE" });
 };

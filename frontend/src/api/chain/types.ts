@@ -15,6 +15,10 @@ export type AddChainItemRequest = {
   position: number;
 };
 
+export type RemoveChainParams = {
+  pluginId: number;
+};
+
 // TODO fix typing of the id as it is not a string!!!
 export type AddChainItemResponse = {
   plugin: ChainPlugin;

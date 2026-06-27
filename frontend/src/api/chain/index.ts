@@ -1,6 +1,11 @@
 import { useChainStore } from "@/stores/chain";
 import { useMutation } from "@tanstack/react-query";
-import { addChainItem, clearChain, reorderChain } from "./chain.mutations";
+import {
+  addChainItem,
+  clearChain,
+  removeChainItem,
+  reorderChain,
+} from "./chain.mutations";
 import { AddChainItemRequest, UseChainReorderParams } from "./types";
 
 export const useChainReorder = () => {
@@ -9,12 +14,6 @@ export const useChainReorder = () => {
   return useMutation({
     mutationFn: async ({ indexFrom, indexTo }: UseChainReorderParams) => {
       const target = chain[indexFrom];
-      console.log("DEBUG: ", {
-        chain,
-        indexFrom,
-        indexTo,
-        target,
-      });
       moveNode(indexFrom, indexTo);
       await reorderChain({
         pluginId: parseInt(target.id),
@@ -22,7 +21,6 @@ export const useChainReorder = () => {
       });
     },
     onError: (_, variables) => {
-      console.log("no i chuj no i cześć");
       moveNode(variables.indexTo, variables.indexFrom);
     },
   });
@@ -37,6 +35,19 @@ export const useAppendChainItem = () => {
     },
     onSuccess: (data) => {
       addNode(data);
+    },
+  });
+};
+
+export const useRemoveChainItem = () => {
+  const { removeNode } = useChainStore();
+
+  return useMutation({
+    mutationFn: async ({ pluginId }: { pluginId: string }) => {
+      await removeChainItem({ pluginId: parseInt(pluginId) });
+    },
+    onSuccess: (_, variables) => {
+      removeNode(variables.pluginId);
     },
   });
 };

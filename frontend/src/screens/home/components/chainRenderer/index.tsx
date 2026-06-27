@@ -1,4 +1,4 @@
-import { useChainReorder } from "@/api/chain";
+import { useChainReorder, useRemoveChainItem } from "@/api/chain";
 import { useChainStore } from "@/stores/chain";
 import ChainCard from "@/ui/components/cards/ChainCard";
 import { CARD_SIZES } from "@/ui/components/cards/size";
@@ -22,9 +22,19 @@ const COLUMNS = 3;
 const PADDING_SIZE = 24;
 const GRID_GAP = 12;
 
-const ChainRenderer = () => {
+type ChainRendererProps = {
+  isEditMode: boolean;
+};
+
+const ChainRenderer = ({ isEditMode }: ChainRendererProps) => {
   const { mutateAsync: reorderChain, isPending: isReorderPending } =
     useChainReorder();
+
+  const {
+    mutateAsync: removeItem,
+    isPending: isRemovePending,
+    variables: removeVariables,
+  } = useRemoveChainItem();
 
   const { width } = useWindowDimensions();
   const scrollableRef = useAnimatedRef<Animated.ScrollView>();
@@ -67,6 +77,17 @@ const ChainRenderer = () => {
     [reorderChain],
   );
 
+  const removeChainItem = useCallback(
+    async (pluginId: string) => {
+      try {
+        await removeItem({ pluginId });
+      } catch {
+        toast.error("Faield to remove chain item");
+      }
+    },
+    [removeItem],
+  );
+
   const renderItem = useCallback<SortableGridRenderItem<GridItem>>(
     ({ item }) => {
       return (
@@ -76,16 +97,28 @@ const ChainRenderer = () => {
               <View style={{ flex: 1, opacity: 0 }} pointerEvents="none" />
             ) : (
               <ChainCard
-                disabled={isReorderPending}
+                disabled={isReorderPending || isRemovePending}
                 name={item.metadata.name}
                 effectClass={item.metadata.class}
+                pendingDeletion={
+                  removeVariables?.pluginId === item.id && isRemovePending
+                }
+                onDelete={
+                  isEditMode ? () => removeChainItem(item.id) : undefined
+                }
               />
             )}
           </Sortable.Handle>
         </Sortable.Touchable>
       );
     },
-    [isReorderPending],
+    [
+      isEditMode,
+      isRemovePending,
+      isReorderPending,
+      removeChainItem,
+      removeVariables?.pluginId,
+    ],
   );
 
   const startY = PADDING_SIZE + cardHeight / 2;

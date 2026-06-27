@@ -5,7 +5,7 @@ import * as Haptics from "expo-haptics";
 import { Pressable, PressableProps, ViewStyle } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
-type IconButtonSize = "regular" | "huge";
+type IconButtonSize = "tiny" | "regular" | "huge";
 
 type IconButtonProps = {
   iconName: MaterialDesignIconsIconName;
@@ -37,6 +37,7 @@ const IconButton = ({
         Haptics.selectionAsync();
         onPress?.();
       }}
+      hitSlop={hitSlop[size]}
       style={[
         styles.container({ backgroundColor }),
         containerStyle,
@@ -53,8 +54,15 @@ const IconButton = ({
 };
 
 const iconSize: Record<IconButtonSize, number> = {
+  tiny: 13,
   regular: 18,
   huge: 32,
+};
+
+const hitSlop: Record<IconButtonSize, number> = {
+  tiny: 6,
+  regular: 4,
+  huge: 0,
 };
 
 export const styles = StyleSheet.create((theme) => ({
@@ -67,6 +75,9 @@ export const styles = StyleSheet.create((theme) => ({
 
     variants: {
       size: {
+        tiny: {
+          padding: 2,
+        },
         regular: {
           padding: 8,
         },

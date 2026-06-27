@@ -26,7 +26,7 @@ const HomeScreen = () => {
         }}
       />
       <BlueprintGrid />
-      <ChainRenderer />
+      <ChainRenderer isEditMode={isEditMode} />
       <LibrarySheet ref={librarySheetRef} />
       <PresetsSheet
         ref={presetsSheetRef}

@@ -3,7 +3,8 @@ import Text from "@/ui/components/text/Text";
 import { getEffectUIConfig } from "@/ui/effects/definitions";
 import { MaterialDesignIcons } from "@react-native-vector-icons/material-design-icons";
 import { View } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import IconButton from "../IconButton";
 import { CARD_SIZES } from "./size";
 import { CardTypes } from "./types";
 
@@ -12,6 +13,7 @@ type ChainCardProps = {
   effectClass: EffectClass;
   disabled?: boolean;
   pendingDeletion?: boolean;
+  onDelete?: () => void;
 };
 
 const ChainCard = ({
@@ -19,12 +21,25 @@ const ChainCard = ({
   effectClass,
   pendingDeletion,
   disabled,
+  onDelete,
 }: ChainCardProps) => {
+  const { theme } = useUnistyles();
   const { iconName, color } = getEffectUIConfig(effectClass);
+
+  const shouldShowOverlay = disabled && !pendingDeletion;
 
   return (
     <View style={styles.container({ pendingDeletion })}>
-      {disabled && <View style={styles.overlay} />}
+      {onDelete && (
+        <IconButton
+          iconName="close"
+          backgroundColor={theme.colors.red}
+          size="tiny"
+          style={styles.buttonStyle}
+          onPress={onDelete}
+        />
+      )}
+      {shouldShowOverlay && <View style={styles.overlay} />}
       <View style={styles.iconContainer(color)}>
         <MaterialDesignIcons name={iconName} color={color} size={48} />
       </View>
@@ -37,20 +52,27 @@ const ChainCard = ({
   );
 };
 
+const BORDER_RADIUS = 8;
+
 const styles = StyleSheet.create((theme) => ({
   overlay: {
     ...StyleSheet.absoluteFill,
     backgroundColor: theme.colors.background.main,
     opacity: 0.6,
     zIndex: 2,
+    borderRadius: BORDER_RADIUS,
+  },
+  buttonStyle: {
+    position: "absolute",
+    right: -7,
+    top: -7,
   },
   container: ({
     pendingDeletion,
   }: Pick<ChainCardProps, "pendingDeletion">) => ({
-    overflow: "hidden",
     backgroundColor: theme.colors.background.secondary,
     padding: 16,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS,
     alignItems: "center",
     gap: 12,
     width: CARD_SIZES[CardTypes.chainCard].width,
