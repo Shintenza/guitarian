@@ -1,4 +1,4 @@
-import { EffectClass } from "@/types/plugins";
+import { EffectClass, Option } from "@/types/plugins";
 
 export type ControlMetadata = {
   id: number;
@@ -6,6 +6,7 @@ export type ControlMetadata = {
   defaultValue: number;
   minValue: number;
   maxValue: number;
+  scalePoints: Option<number>;
 };
 
 export type PluginMetadata = {

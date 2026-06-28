@@ -18,7 +18,7 @@ pub fn get_scale_points_vec(scale_points: ScalePoints) -> Vec<ScalePoint> {
     .into_iter()
     .map(|sp| {
       let label = sp.label().as_str().unwrap_or("").to_string();
-      let value = sp.value().as_float().unwrap_or(0.0);
+      let value = sp.value().as_int().unwrap_or(0);
       ScalePoint { label, value }
     })
     .collect()

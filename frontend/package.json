@@ -34,10 +34,11 @@
     "expo-symbols": "~56.0.6",
     "expo-system-ui": "~56.0.5",
     "expo-web-browser": "~56.0.5",
+    "lodash.throttle": "^4.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.85.3",
-    "react-native-actions-sheet": "^10.1.2",
+    "react-native-dropdown-picker": "^5.4.6",
     "react-native-gesture-handler": "~2.31.1",
     "react-native-nitro-modules": "^0.35.9",
     "react-native-reanimated": "4.3.1",
@@ -54,6 +55,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@types/lodash.throttle": "^4.1.9",
     "@types/react": "~19.2.2",
     "@types/react-native-zeroconf": "^0.13.1",
     "eslint": "^10.5.0",

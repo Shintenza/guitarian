@@ -45,10 +45,14 @@ impl PluginChain {
     }
   }
 
-  pub fn add_plugin(&mut self, index: usize, plugin: InitializedPlugin) -> InstanceConfig {
+  pub fn add_plugin(&mut self, index: usize, mut plugin: InitializedPlugin) -> InstanceConfig {
     let instance_config = PluginChain::get_plugin_instance_config(&plugin, self.plugin_id);
     // TODO handle negative values
     let safe_index = index.min(self.chain.len());
+    plugin
+      .instance
+      .set_port_values_source(instance_config.state.clone());
+
     let command = AudioCommand::AddPlugin(
       index,
       PluginInstanceWithId {

@@ -7,6 +7,7 @@ import ChainCard from "@/ui/components/cards/ChainCard";
 import { CARD_SIZES } from "@/ui/components/cards/size";
 import { CardTypes } from "@/ui/components/cards/types";
 import { useResponsiveValue } from "@/ui/theme/utils";
+import { useLatestRef } from "@/utils/ref";
 import { useCallback, useMemo } from "react";
 import { View, useWindowDimensions } from "react-native";
 import Animated, { useAnimatedRef } from "react-native-reanimated";
@@ -27,11 +28,17 @@ const GRID_GAP = 12;
 
 type ChainRendererProps = {
   isEditMode: boolean;
+  onChainItemPress: (pluginId: string) => void;
 };
 
-const ChainRenderer = ({ isEditMode }: ChainRendererProps) => {
+const ChainRenderer = ({
+  isEditMode,
+  onChainItemPress,
+}: ChainRendererProps) => {
   const { mutateAsync: reorderChain, isPending: isReorderPending } =
     useChainReorder();
+
+  const onChainItemPressRef = useLatestRef(onChainItemPress);
 
   const {
     mutateAsync: removeItem,
@@ -103,6 +110,7 @@ const ChainRenderer = ({ isEditMode }: ChainRendererProps) => {
                 disabled={isReorderPending || isRemovePending}
                 name={item.metadata.name}
                 effectClass={item.metadata.class}
+                onPress={() => onChainItemPressRef.current(item.id)}
                 pendingDeletion={
                   removeVariables?.pluginId === item.id && isRemovePending
                 }
@@ -119,6 +127,7 @@ const ChainRenderer = ({ isEditMode }: ChainRendererProps) => {
       isEditMode,
       isRemovePending,
       isReorderPending,
+      onChainItemPressRef,
       removeChainItem,
       removeVariables?.pluginId,
     ],

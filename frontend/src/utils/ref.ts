@@ -1,4 +1,4 @@
-import { Ref } from "react";
+import { Ref, useLayoutEffect, useRef } from "react";
 
 type PossibleRef<T> = Ref<T> | undefined;
 
@@ -12,4 +12,14 @@ export function mergeRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
       }
     });
   };
+}
+
+export function useLatestRef<T>(value: T) {
+  const ref = useRef<T>(value);
+
+  useLayoutEffect(() => {
+    ref.current = value;
+  }, [value]);
+
+  return ref;
 }

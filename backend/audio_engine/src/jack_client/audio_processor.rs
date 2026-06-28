@@ -16,6 +16,7 @@ pub struct AudioProcessor {
   audio_out: Port<AudioOut>,
   active_plugins: Vec<PluginInstanceWithId>,
   audio_commands_consumer: HeapCons<AudioCommand>,
+  scratch_buf: Vec<f32>,
 }
 
 impl AudioProcessor {
@@ -23,6 +24,7 @@ impl AudioProcessor {
     audio_in: Port<AudioIn>,
     audio_out: Port<AudioOut>,
     audio_commands_consumer: HeapCons<AudioCommand>,
+    buffer_size: usize,
   ) -> Self {
     let active_plugins: Vec<PluginInstanceWithId> =
       Vec::with_capacity(INITIAL_ACTIVE_PLUGINS_CAPACITY);
@@ -32,6 +34,7 @@ impl AudioProcessor {
       audio_out,
       active_plugins,
       audio_commands_consumer,
+      scratch_buf: vec![0.0; buffer_size],
     }
   }
 
@@ -71,16 +74,31 @@ impl ProcessHandler for AudioProcessor {
 
     let in_buf = self.audio_in.as_slice(process_scope);
     let out_buf = self.audio_out.as_mut_slice(process_scope);
-
     let n_frames = in_buf.len();
 
-    if self.active_plugins.len() == 0 {
+    if self.active_plugins.is_empty() {
       out_buf.clone_from_slice(in_buf);
       return Control::Continue;
     }
 
+    let scratch = &mut self.scratch_buf[..n_frames];
+
+    out_buf.clone_from_slice(in_buf);
+
+    let mut write_to_scratch = true;
+
     for active_plugin in &mut self.active_plugins {
-      active_plugin.instance.process(in_buf, out_buf, n_frames);
+      if write_to_scratch {
+        active_plugin.instance.process(&*out_buf, scratch, n_frames);
+      } else {
+        active_plugin.instance.process(&*scratch, out_buf, n_frames);
+      }
+
+      write_to_scratch = !write_to_scratch;
+    }
+
+    if !write_to_scratch {
+      out_buf.clone_from_slice(scratch);
     }
 
     Control::Continue

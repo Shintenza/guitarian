@@ -5,8 +5,8 @@ use std::env;
 
 use crate::jack_client::audio_processor::AudioProcessor;
 use crate::jack_client::notification_handler::NotificationHandler;
-use crate::plugin_manager::types::AudioCommand;
 use crate::plugin_manager::manager::PluginManager;
+use crate::plugin_manager::types::AudioCommand;
 
 struct AudioEngineInternals {
   client: Client,
@@ -38,7 +38,8 @@ impl AudioEngine {
 
     let plugin_manager = PluginManager::new(sample_rate, producer);
 
-    let processor = AudioProcessor::new(audio_in, audio_out, consumer);
+    let processor =
+      AudioProcessor::new(audio_in, audio_out, consumer, client.buffer_size() as usize);
     let notification_handler = NotificationHandler;
 
     let internals = AudioEngineInternals {

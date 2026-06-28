@@ -36,6 +36,28 @@ export const useChainOptimistic = () => {
 
     setOptimistically: (plugins: ChainPlugin[]) => applyUpdate(() => plugins),
 
+    updateControlOptimistically: (
+      pluginId: string,
+      controlId: number,
+      newValue: number,
+    ) =>
+      applyUpdate((old) =>
+        old.map((plugin) => {
+          if (plugin.id !== pluginId) return plugin;
+
+          return {
+            ...plugin,
+            controlsState: plugin.controlsState.map((control) => {
+              if (control.id !== controlId) return control;
+              return {
+                id: controlId,
+                value: newValue,
+              };
+            }),
+          };
+        }),
+      ),
+
     rollback: (_error: unknown, _variables: unknown, context: any) => {
       if (context?.previousChain) {
         queryClient.setQueryData(queryKey, context.previousChain);

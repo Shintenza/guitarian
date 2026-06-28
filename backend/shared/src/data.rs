@@ -12,7 +12,7 @@ pub enum ControlType {
 #[derive(Decode, Encode, Serialize, Deserialize)]
 pub struct ScalePoint {
   pub label: String,
-  pub value: f32,
+  pub value: i32,
 }
 
 #[derive(Decode, Encode, Serialize, Deserialize)]

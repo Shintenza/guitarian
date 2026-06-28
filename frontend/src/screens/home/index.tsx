@@ -7,11 +7,13 @@ import ChainRenderer from "./components/chainRenderer";
 import Controls from "./components/Controls";
 import Header from "./components/Header";
 import LibrarySheet from "./sheets/library";
+import ParamsSheet, { ParamsSheetRef } from "./sheets/params";
 import PresetsSheet from "./sheets/presets";
 
 const HomeScreen = () => {
   const librarySheetRef = useRef<TrueSheet>(null);
   const presetsSheetRef = useRef<TrueSheet>(null);
+  const paramsSheetRef = useRef<ParamsSheetRef>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isPresetsModalActive, setIsPresetsModalActive] = useState(false);
 
@@ -26,12 +28,16 @@ const HomeScreen = () => {
         }}
       />
       <BlueprintGrid />
-      <ChainRenderer isEditMode={isEditMode} />
+      <ChainRenderer
+        isEditMode={isEditMode}
+        onChainItemPress={(pluginId) => paramsSheetRef.current?.open(pluginId)}
+      />
       <LibrarySheet ref={librarySheetRef} />
       <PresetsSheet
         ref={presetsSheetRef}
         onWillDismiss={() => setIsPresetsModalActive(false)}
       />
+      <ParamsSheet ref={paramsSheetRef} />
       <Controls
         isEditMode={isEditMode}
         onCancelEdit={() => setIsEditMode(false)}

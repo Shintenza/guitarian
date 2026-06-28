@@ -1,3 +1,8 @@
+export type Option<T> = {
+  label: string;
+  value: T;
+};
+
 export const EffectsClasses = {
   Distortion: "Distortion",
   Amp: "Amplifier",
@@ -15,12 +20,23 @@ export type PluginMetadata = {
   controlsMetadata: ControlMetadata[];
 };
 
+export const ControlTypes = {
+  Continuous: "Continuous",
+  Integer: "Integer",
+  Toggled: "Toggled",
+  Enumeration: "Enumeration",
+} as const;
+
+export type ControlType = (typeof ControlTypes)[keyof typeof ControlTypes];
+
 export type ControlMetadata = {
   id: number;
   name: string;
   defaultValue: number;
+  controlType: ControlType;
   minValue: number;
   maxValue: number;
+  scalePoints: Option<number>[];
 };
 
 export type ControlState = {

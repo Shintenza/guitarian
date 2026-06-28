@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type ConnectionConfig = {
+export type ConnectionConfig = {
   host: string;
   port: number;
 };

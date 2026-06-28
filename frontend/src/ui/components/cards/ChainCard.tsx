@@ -2,7 +2,7 @@ import { EffectClass } from "@/types/plugins";
 import Text from "@/ui/components/text/Text";
 import { getEffectUIConfig } from "@/ui/effects/definitions";
 import { MaterialDesignIcons } from "@react-native-vector-icons/material-design-icons";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import IconButton from "../IconButton";
 import { CARD_SIZES } from "./size";
@@ -14,6 +14,7 @@ type ChainCardProps = {
   disabled?: boolean;
   pendingDeletion?: boolean;
   onDelete?: () => void;
+  onPress?: () => void;
 };
 
 const ChainCard = ({
@@ -22,6 +23,7 @@ const ChainCard = ({
   pendingDeletion,
   disabled,
   onDelete,
+  onPress,
 }: ChainCardProps) => {
   const { theme } = useUnistyles();
   const { iconName, color } = getEffectUIConfig(effectClass);
@@ -29,26 +31,28 @@ const ChainCard = ({
   const shouldShowOverlay = disabled && !pendingDeletion;
 
   return (
-    <View style={styles.container({ pendingDeletion })}>
-      {onDelete && (
-        <IconButton
-          iconName="close"
-          backgroundColor={theme.colors.red}
-          size="tiny"
-          style={styles.buttonStyle}
-          onPress={onDelete}
-        />
-      )}
-      {shouldShowOverlay && <View style={styles.overlay} />}
-      <View style={styles.iconContainer(color)}>
-        <MaterialDesignIcons name={iconName} color={color} size={48} />
+    <Pressable disabled={disabled} onPress={onPress}>
+      <View style={styles.container({ pendingDeletion })}>
+        {onDelete && (
+          <IconButton
+            iconName="close"
+            backgroundColor={theme.colors.red}
+            size="tiny"
+            style={styles.buttonStyle}
+            onPress={onDelete}
+          />
+        )}
+        {shouldShowOverlay && <View style={styles.overlay} />}
+        <View style={styles.iconContainer(color)}>
+          <MaterialDesignIcons name={iconName} color={color} size={48} />
+        </View>
+        <View style={styles.textContainer}>
+          <Text size="XXS" numberOfLines={1}>
+            {name}
+          </Text>
+        </View>
       </View>
-      <View style={styles.textContainer}>
-        <Text size="XXS" numberOfLines={1}>
-          {name}
-        </Text>
-      </View>
-    </View>
+    </Pressable>
   );
 };
 
