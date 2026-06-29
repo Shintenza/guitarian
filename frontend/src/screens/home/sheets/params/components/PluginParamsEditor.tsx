@@ -28,9 +28,12 @@ const PluginParamsEditor = ({ plugin }: SheetParamsEditorProps) => {
 const styles = StyleSheet.create((theme) => ({
   contentContainerStyle: {
     paddingVertical: 24,
+    gap: 24,
     paddingHorizontal: 24,
   },
-  controlsContainer: {},
+  controlsContainer: {
+    gap: 18,
+  },
 }));
 
 export default PluginParamsEditor;

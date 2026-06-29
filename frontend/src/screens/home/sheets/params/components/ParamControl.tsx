@@ -1,7 +1,7 @@
-import { DropdownMenu, Text } from "@/ui/components";
-import Slider from "@expo/ui/community/slider";
+import { ControlType } from "@/types/plugins";
+import { DropdownMenu, Slider, Switch, Text } from "@/ui/components";
 import { View } from "react-native";
-import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { StyleSheet } from "react-native-unistyles";
 import usePluginControl from "../hooks/usePluginControl";
 
 type ParamControlProps = {
@@ -9,7 +9,6 @@ type ParamControlProps = {
   controlId: number;
 };
 const ParamControl = ({ controlId, pluginId }: ParamControlProps) => {
-  const { theme } = useUnistyles();
   const {
     value,
     name,
@@ -23,16 +22,15 @@ const ParamControl = ({ controlId, pluginId }: ParamControlProps) => {
     controlId,
   });
   return (
-    <View style={styles.container}>
+    <View style={styles.container({ type })}>
       <Text>{name}</Text>
-      {type === "Continuous" && (
+      {(type === "Continuous" || type === "Integer") && (
         <Slider
           minimumValue={minValue}
           maximumValue={maxValue}
+          step={type === "Integer" ? 1 : undefined}
           value={value}
-          onValueChange={setValue}
-          thumbTintColor={theme.colors.orange}
-          minimumTrackTintColor={theme.colors.orange}
+          onChange={setValue}
         />
       )}
       {type === "Enumeration" && (
@@ -43,12 +41,24 @@ const ParamControl = ({ controlId, pluginId }: ParamControlProps) => {
           onChange={setValue}
         />
       )}
+      {type === "Toggled" && (
+        <Switch value={Boolean(value)} onChange={(e) => setValue(Number(e))} />
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create((theme) => ({
-  container: {},
+  container: ({ type }: { type?: ControlType }) => ({
+    ...(type === "Toggled"
+      ? {
+          flexDirection: "row",
+          justifyContent: "space-between",
+        }
+      : {}),
+
+    gap: 6,
+  }),
 }));
 
 export default ParamControl;
