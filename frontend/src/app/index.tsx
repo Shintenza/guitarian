@@ -1,34 +1,22 @@
 import { useCurrentChain } from "@/api/chain";
-import { useSocket } from "@/contexts/WebSocketProvider";
-import useFindServer from "@/utils/api/useFindServer";
+import { useConnection } from "@/contexts/ConnectionProvider";
 import { Redirect } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 
 export default function EntryScreen() {
+  const { isConnected } = useConnection();
   const { isPending } = useCurrentChain();
-  const { connection, isScanning } = useFindServer();
-  const { connect, isConnected } = useSocket();
+
+  const isAppReady = isConnected && !isPending;
 
   useEffect(() => {
-    console.log("IS SOCKED CONNECTED: ", isConnected);
-  }, [isConnected]);
-
-  useEffect(() => {
-    if (!connection) return;
-    connect(connection);
-  }, [connection, connect]);
-
-  useEffect(() => {
-    if ((connection || !isScanning) && !isPending) {
+    if (isAppReady) {
       SplashScreen.hide();
     }
-  }, [connection, isPending, isScanning]);
+  }, [isAppReady]);
 
-  // TODO redirect to connection screen
-  if (!connection && !isScanning) return <></>;
-
-  if (connection && !isPending) {
+  if (isAppReady) {
     return <Redirect href={"/home"} />;
   }
 

@@ -1,4 +1,4 @@
-import { useConfigStore } from "@/stores/config";
+import { useConnection } from "@/contexts/ConnectionProvider";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import KEYS from "./chain.keys";
 import {
@@ -12,11 +12,11 @@ import { AddChainItemRequest, UseChainReorderParams } from "./types";
 import { useChainOptimistic } from "./utils";
 
 export const useCurrentChain = () => {
-  const { connection } = useConfigStore();
+  const { isConnected } = useConnection();
   return useQuery({
     queryFn: getCurrentChain,
     queryKey: [...KEYS.GET_CURRENT_CHAIN],
-    enabled: Boolean(connection),
+    enabled: isConnected,
   });
 };
 

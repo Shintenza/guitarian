@@ -1,6 +1,11 @@
 import camelcaseKeys from "camelcase-keys";
 import snakecaseKeys from "snakecase-keys";
-import { ConnectionListener, SocketMessage, WebSocketListener } from "./types";
+import {
+  ConnectionListener,
+  SocketConnectionState,
+  SocketMessage,
+  WebSocketListener,
+} from "./types";
 
 class WebSocketClient {
   private ws: WebSocket | null = null;
@@ -9,10 +14,15 @@ class WebSocketClient {
   private url: string | null = null;
   private listeners: Set<WebSocketListener> = new Set();
   private connectionListeners: Set<ConnectionListener> = new Set();
+  private reconnectAttempts = 0;
+  private maxReconntectAttempts = 3;
 
-  private updateStatus(status: boolean): void {
-    this.isConnected = status;
-    this.connectionListeners.forEach((listener) => listener(status));
+  private connectionState: SocketConnectionState =
+    SocketConnectionState.Disconnected;
+
+  private updateState(state: SocketConnectionState): void {
+    this.connectionState = state;
+    this.connectionListeners.forEach((listener) => listener(state));
   }
 
   public setUrl(url: string): void {
@@ -21,11 +31,15 @@ class WebSocketClient {
 
   public connect(): void {
     if (this.ws || !this.url) return;
+    this.updateState(SocketConnectionState.Connecting);
     this.ws = new WebSocket(this.url);
 
     this.ws.onopen = () => {
-      this.updateStatus(true);
-      if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+      this.updateState(SocketConnectionState.Open);
+      this.reconnectAttempts = 0;
+      if (this.reconnectTimeout) {
+        clearTimeout(this.reconnectTimeout);
+      }
     };
 
     this.ws.onmessage = (event: WebSocketMessageEvent) => {
@@ -38,7 +52,7 @@ class WebSocketClient {
     };
 
     this.ws.onclose = () => {
-      this.updateStatus(false);
+      this.updateState(SocketConnectionState.Disconnected);
       this.ws = null;
       this.reconnect();
     };
@@ -49,9 +63,14 @@ class WebSocketClient {
   }
 
   private reconnect(): void {
-    this.reconnectTimeout = setTimeout(() => {
-      this.connect();
-    }, 3000);
+    if (this.reconnectAttempts < this.maxReconntectAttempts) {
+      this.reconnectTimeout = setTimeout(() => {
+        this.reconnectAttempts++;
+        this.connect();
+      }, 3000);
+    } else {
+      this.updateState(SocketConnectionState.TimedOut);
+    }
   }
 
   public sendMessage(message: SocketMessage): void {
@@ -69,11 +88,21 @@ class WebSocketClient {
 
   public subscribeConnection(listener: ConnectionListener): () => void {
     this.connectionListeners.add(listener);
-    listener(this.isConnected);
+    listener(this.connectionState);
+
     return () => {
       this.connectionListeners.delete(listener);
     };
   }
+
+  public getState() {
+    return this.connectionState;
+  }
+
+  public disconnect() {
+    this.ws?.close();
+    this.updateState(SocketConnectionState.Disconnected);
+  }
 }
 
-export default WebSocketClient;
+export const webSocketClient = new WebSocketClient();

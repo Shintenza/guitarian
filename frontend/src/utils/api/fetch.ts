@@ -1,4 +1,4 @@
-import { configStore } from "@/stores/config";
+import { connectionStore } from "@/stores/connection";
 import camelcaseKeys from "camelcase-keys";
 import snakecaseKeys from "snakecase-keys";
 
@@ -10,7 +10,7 @@ export async function apiFetch<T>(
   endpoint: string,
   options: FetchOptions = {},
 ): Promise<T> {
-  const connection = configStore.getState().connection;
+  const connection = connectionStore.getState().connection;
 
   if (!connection) {
     throw new Error("missing connection details");

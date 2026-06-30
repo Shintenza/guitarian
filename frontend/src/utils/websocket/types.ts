@@ -1,5 +1,5 @@
-export type WebSocketListener = () => void;
-export type ConnectionListener = (isConnected: boolean) => void;
+export type WebSocketListener = (data: unknown) => void;
+export type ConnectionListener = (state: SocketConnectionState) => void;
 
 const SocketActions = {
   SetParam: "SetParam",
@@ -16,5 +16,15 @@ export type SetParamMessage = SocketActionMessageBase<"SetParam"> & {
   portId: number;
   value: number;
 };
+
+export const SocketConnectionState = {
+  Disconnected: "disconnected",
+  Connecting: "connecting",
+  Open: "open",
+  TimedOut: "timedOut",
+} as const;
+
+export type SocketConnectionState =
+  (typeof SocketConnectionState)[keyof typeof SocketConnectionState];
 
 export type SocketMessage = SetParamMessage;

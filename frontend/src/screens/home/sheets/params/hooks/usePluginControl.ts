@@ -1,6 +1,6 @@
 import { useChainOptimistic } from "@/api/chain/utils";
-import { useSocket } from "@/contexts/WebSocketProvider";
 import { SetParamMessage } from "@/utils/websocket/types";
+import useWebsocket from "@/utils/websocket/useWebsocket";
 import throttle from "lodash.throttle";
 import { useCallback, useMemo } from "react";
 import useChainPlugin from "./useChainPlugin";
@@ -12,14 +12,14 @@ type UsePluginParamParams = {
 const usePluginControl = ({ pluginId, controlId }: UsePluginParamParams) => {
   const { plugin } = useChainPlugin(pluginId);
   const { updateControlOptimistically } = useChainOptimistic();
-  const { client } = useSocket();
+  const { sendMessage } = useWebsocket();
 
   const sendThrottledSetParamMessage = useCallback(
     // eslint-disable-next-line react-hooks/use-memo
     throttle((msg: SetParamMessage) => {
-      client.sendMessage(msg);
+      sendMessage(msg);
     }, 150),
-    [client],
+    [sendMessage],
   );
 
   const setValue = useCallback(
