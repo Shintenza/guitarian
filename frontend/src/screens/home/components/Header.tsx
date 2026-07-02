@@ -1,12 +1,15 @@
 import { usePresetStore } from "@/stores/preset";
 import { IconButton, Text } from "@/ui/components";
+import { PopupRef } from "@/ui/components/Popup";
 import SaveIcon from "@expo/material-symbols/save.xml";
 import { Icon } from "@expo/ui";
 import { MenuView, NativeActionEvent } from "@expo/ui/community/menu";
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
+import { useRef } from "react";
 import { Pressable, View } from "react-native";
 import Animated, { useSharedValue, withTiming } from "react-native-reanimated";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import SavePresetPopup from "./SavePresetPopup";
 
 const editIcon = Icon.select({
   ios: "pencil",
@@ -31,6 +34,7 @@ const Header = ({
 }: HeaderProps) => {
   const { name, isDirty } = usePresetStore();
   const chevronProgress = useSharedValue(0);
+  const ref = useRef<PopupRef>(null);
 
   const onTitlePress = () => {
     let destination = 180;
@@ -45,6 +49,8 @@ const Header = ({
     const action = e.nativeEvent.event;
     if (action === "edit") {
       onEdit();
+    } else if (action === "save") {
+      ref.current?.open();
     }
   };
 
@@ -74,7 +80,7 @@ const Header = ({
           actions={[
             { id: "edit", title: "Edit", image: editIcon },
             {
-              id: "delete",
+              id: "save",
               title: "Save",
               image: saveIcon,
               attributes: {
@@ -86,6 +92,7 @@ const Header = ({
           <IconButton iconName="dots-vertical" backgroundColor="transparent" />
         </MenuView>
       </View>
+      <SavePresetPopup ref={ref} />
     </View>
   );
 };

@@ -10,6 +10,10 @@ export type LoadPresetResponse = {
   chain: ChainPlugin[];
 };
 
+export type SavePresetRequest = {
+  presetName: string;
+};
+
 export type PresetDetails = {
   id: number;
   name: string;

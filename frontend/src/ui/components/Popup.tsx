@@ -11,10 +11,17 @@ export type PopupProps = {
   ref?: Ref<PopupRef>;
   children: ReactNode;
   style?: ViewStyle;
+  closeOnBackdropPress?: boolean;
   onDismiss?: () => void;
 };
 
-const ConfirmationPopup = ({ ref, children, style, onDismiss }: PopupProps) => {
+const ConfirmationPopup = ({
+  ref,
+  children,
+  style,
+  closeOnBackdropPress = false,
+  onDismiss,
+}: PopupProps) => {
   const [isOpened, setIsOpened] = useState(false);
 
   useImperativeHandle(ref, () => ({
@@ -34,7 +41,10 @@ const ConfirmationPopup = ({ ref, children, style, onDismiss }: PopupProps) => {
       onRequestClose={handleDismiss}
       animationType="fade"
     >
-      <Pressable style={styles.centered} onPress={handleDismiss}>
+      <Pressable
+        style={styles.centered}
+        onPress={closeOnBackdropPress ? handleDismiss : undefined}
+      >
         <View style={[styles.container, style]}>{children}</View>
       </Pressable>
     </Modal>
