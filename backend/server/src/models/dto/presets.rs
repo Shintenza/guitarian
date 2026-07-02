@@ -1,5 +1,6 @@
 use sea_orm::FromQueryResult;
 use serde::{Deserialize, Serialize};
+use shared::data::ChainItem;
 
 #[derive(Deserialize)]
 pub struct SaveCurrentPreset {
@@ -15,4 +16,11 @@ pub struct PresetListItem {
 #[derive(Serialize)]
 pub struct ListPresetsResponse {
   pub presets: Vec<PresetListItem>,
+}
+
+#[derive(Serialize)]
+pub struct LoadPresetResponse {
+  pub id: u32,
+  pub name: String,
+  pub chain: Vec<ChainItem>,
 }

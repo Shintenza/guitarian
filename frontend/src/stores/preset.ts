@@ -1,11 +1,13 @@
 import { useCurrentChain } from "@/api/chain";
 import { ChainPlugin } from "@/types/plugins";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMemo } from "react";
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { useShallow } from "zustand/react/shallow";
 
 type PresetStore = {
-  id: string | null;
+  id: number | null;
   name: string;
   originalChainSnapshot: ChainPlugin[] | null;
   loadPreset: ({
@@ -13,22 +15,37 @@ type PresetStore = {
     name,
     chain,
   }: {
-    id: string;
+    id: number;
     name: string;
     chain: ChainPlugin[];
   }) => void;
 };
 
-export const presetStore = create<PresetStore>((set) => ({
-  id: null,
-  name: "New preset",
-  originalChainSnapshot: [],
-  loadPreset: ({ id, name, chain }) => {},
-}));
+export const presetStore = create<PresetStore>()(
+  persist(
+    (set) => ({
+      id: null,
+      name: "New preset",
+      originalChainSnapshot: [],
+
+      loadPreset: ({ id, name, chain }) => {
+        set({
+          id,
+          name,
+          originalChainSnapshot: chain,
+        });
+      },
+    }),
+    {
+      name: "preset-store",
+      storage: createJSONStorage(() => AsyncStorage),
+    },
+  ),
+);
 
 export const usePresetStore = () => {
   const { data: currentChain = [] } = useCurrentChain();
-  const { name, originalChainSnapshot } = presetStore(
+  const { id, name, originalChainSnapshot, loadPreset } = presetStore(
     useShallow((s) => ({
       id: s.id,
       name: s.name,
@@ -47,7 +64,9 @@ export const usePresetStore = () => {
   }, [currentChain, originalChainSnapshot]);
 
   return {
+    id,
     name,
     isDirty,
+    loadPreset,
   };
 };

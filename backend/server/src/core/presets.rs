@@ -9,7 +9,7 @@ use shared::{data::PresetItem, utils::plugin::chain_item_to_preset_item};
 use crate::{
   context::AppContext,
   models::{
-    dto::presets::{ListPresetsResponse, PresetListItem, SaveCurrentPreset},
+    dto::presets::{ListPresetsResponse, LoadPresetResponse, PresetListItem, SaveCurrentPreset},
     entities::preset,
   },
 };
@@ -32,7 +32,7 @@ pub async fn list_presets(
 pub async fn load_preset(
   State(ctx): State<AppContext>,
   Path(id): Path<u32>,
-) -> Result<StatusCode, StatusCode> {
+) -> Result<Json<LoadPresetResponse>, StatusCode> {
   let db_preset = preset::Entity::find_by_id(id)
     .one(&ctx.db)
     .await
@@ -42,13 +42,19 @@ pub async fn load_preset(
   let preset: Vec<PresetItem> =
     serde_json::from_value(db_preset.data).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-  ctx
+  let loaded_preset = ctx
     .engine_client
     .load_preset(preset)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-  Ok(StatusCode::OK)
+  let response = LoadPresetResponse {
+    id,
+    name: db_preset.name,
+    chain: loaded_preset,
+  };
+
+  Ok(Json(response))
 }
 
 pub async fn handle_save_current_preset(
