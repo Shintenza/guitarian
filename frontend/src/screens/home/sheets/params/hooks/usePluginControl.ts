@@ -24,7 +24,6 @@ const usePluginControl = ({ pluginId, controlId }: UsePluginParamParams) => {
 
   const setValue = useCallback(
     (value: number) => {
-      console.log("CHANGED: ", value);
       updateControlOptimistically(pluginId, controlId, value);
       const message: SetParamMessage = {
         action: "SetParam",

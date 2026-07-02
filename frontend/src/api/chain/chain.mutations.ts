@@ -6,7 +6,6 @@ import {
 } from "./types";
 
 export const reorderChain = async (payload: ChainReorderRequest) => {
-  console.log("payload", payload);
   await apiFetch("/chain/reorder", {
     method: "POST",
     body: payload,

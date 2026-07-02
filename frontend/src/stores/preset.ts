@@ -1,5 +1,6 @@
 import { useCurrentChain } from "@/api/chain";
 import { ChainPlugin } from "@/types/plugins";
+import { chainWithStringId } from "@/utils/chain";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMemo } from "react";
 import { create } from "zustand";
@@ -32,7 +33,7 @@ export const presetStore = create<PresetStore>()(
         set({
           id,
           name,
-          originalChainSnapshot: chain,
+          originalChainSnapshot: chainWithStringId(chain),
         });
       },
     }),

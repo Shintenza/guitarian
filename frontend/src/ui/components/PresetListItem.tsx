@@ -1,5 +1,5 @@
-import { Text } from "@/ui/components";
 import Spinner from "@/ui/components/Spinner";
+import Text from "@/ui/components/text/Text";
 import { withHaptics } from "@/utils/haptics";
 import { Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";

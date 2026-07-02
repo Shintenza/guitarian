@@ -2,10 +2,9 @@ import { mergeRefs } from "@/utils/ref";
 import { useRef } from "react";
 import { View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { Popup } from ".";
 import Button from "./Button";
-import { PopupProps, PopupRef } from "./Popup";
-import { Text } from "./text";
+import Popup, { PopupProps, PopupRef } from "./Popup";
+import Text from "./text/Text";
 
 export type ConfirmationPopupProps = {
   title?: string;
