@@ -9,7 +9,10 @@ use shared::{data::PresetItem, utils::plugin::chain_item_to_preset_item};
 use crate::{
   context::AppContext,
   models::{
-    dto::presets::{ListPresetsResponse, LoadPresetResponse, PresetListItem, SaveCurrentPreset},
+    dto::presets::{
+      ListPresetsResponse, LoadPresetResponse, PresetListItem, SaveCurrentPreset,
+      SavePresetResponse,
+    },
     entities::preset,
   },
 };
@@ -60,7 +63,7 @@ pub async fn load_preset(
 pub async fn handle_save_current_preset(
   State(ctx): State<AppContext>,
   Json(payload): Json<SaveCurrentPreset>,
-) -> Result<StatusCode, StatusCode> {
+) -> Result<Json<SavePresetResponse>, StatusCode> {
   let current_chain = ctx
     .engine_client
     .get_current_state()
@@ -69,7 +72,7 @@ pub async fn handle_save_current_preset(
 
   let preset: Vec<PresetItem> = current_chain
     .into_iter()
-    .map(|item| chain_item_to_preset_item(item))
+    .map(chain_item_to_preset_item)
     .collect();
 
   let new_preset = preset::ActiveModel {
@@ -78,10 +81,27 @@ pub async fn handle_save_current_preset(
     ..Default::default()
   };
 
-  new_preset
+  let inserted_item = new_preset
     .insert(&ctx.db)
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-  Ok(StatusCode::OK)
+  let response = SavePresetResponse {
+    name: inserted_item.name,
+    id: inserted_item.id,
+  };
+
+  Ok(Json(response))
+}
+
+pub async fn remove_preset(
+  State(ctx): State<AppContext>,
+  Path(id): Path<u32>,
+) -> Result<StatusCode, StatusCode> {
+  preset::Entity::delete_by_id(id)
+    .exec(&ctx.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+  Ok(StatusCode::NO_CONTENT)
 }

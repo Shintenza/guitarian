@@ -1,5 +1,6 @@
 export { default as BlueprintGrid } from "./BlueprintGrid";
 export { default as Button } from "./Button";
+export { default as ConditionalWrapper } from "./ConditionalWrapper";
 export { default as ConfirmationPopup } from "./ConfirmationPopup";
 export { default as DropdownMenu } from "./DropdownMenu";
 export { default as IconButton } from "./IconButton";

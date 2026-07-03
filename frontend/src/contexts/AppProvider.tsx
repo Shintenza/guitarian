@@ -7,6 +7,7 @@ import { Toaster } from "sonner-native";
 import { ConfirmationProvider } from "./ConfirmationProvider";
 import ConnectionProvider from "./ConnectionProvider";
 
+import { KeyboardProvider } from "react-native-keyboard-controller";
 const queryClient = new QueryClient();
 
 export default function AppProvider({ children }: { children: ReactNode }) {
@@ -15,14 +16,16 @@ export default function AppProvider({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <GestureHandlerRootView>
-        <QueryClientProvider client={queryClient}>
-          <ConnectionProvider>
-            <ConfirmationProvider>
-              {children}
-              <Toaster />
-            </ConfirmationProvider>
-          </ConnectionProvider>
-        </QueryClientProvider>
+        <KeyboardProvider>
+          <QueryClientProvider client={queryClient}>
+            <ConnectionProvider>
+              <ConfirmationProvider>
+                {children}
+                <Toaster />
+              </ConfirmationProvider>
+            </ConnectionProvider>
+          </QueryClientProvider>
+        </KeyboardProvider>
       </GestureHandlerRootView>
     </ThemeProvider>
   );

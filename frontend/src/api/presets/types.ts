@@ -14,6 +14,11 @@ export type SavePresetRequest = {
   presetName: string;
 };
 
+export type SavePresetResponse = {
+  name: string;
+  id: number;
+};
+
 export type PresetDetails = {
   id: number;
   name: string;
@@ -21,4 +26,8 @@ export type PresetDetails = {
 
 export type GetAllPresetsResponse = {
   presets: PresetDetails[];
+};
+
+export type DeletePresetParams = {
+  presetId: number;
 };

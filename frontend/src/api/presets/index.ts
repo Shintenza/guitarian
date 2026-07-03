@@ -1,10 +1,11 @@
 import CHAIN_KEYS from "@/api/chain/chain.keys";
 import { usePresetStore } from "@/stores/preset";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCurrentChain } from "../chain";
+import { useClearChain, useCurrentChain } from "../chain";
 import KEYS from "./presets.keys";
-import { loadPreset, savePreset } from "./presets.mutation";
+import { deletePreset, loadPreset, savePreset } from "./presets.mutation";
 import { getAllPresets } from "./presets.queries";
+import { DeletePresetParams } from "./types";
 
 export const useAllPresets = () => {
   return useQuery({
@@ -38,13 +39,32 @@ export const useSavePreset = () => {
 
   return useMutation({
     mutationFn: savePreset,
-    onSuccess: (_, variables) => {
+    onSuccess: ({ id, name }) => {
       queryClient.refetchQueries({ queryKey: [...KEYS.getAllPresets] });
       loadPreset({
-        id: 0,
+        id,
         chain: chain ?? [],
-        name: variables.presetName,
+        name,
       });
+    },
+  });
+};
+
+export const useDeletePreset = () => {
+  const { id, loadEmptyPreset } = usePresetStore();
+  const { mutateAsync: clearChain } = useClearChain();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ presetId }: DeletePresetParams) => {
+      if (presetId === id) {
+        await clearChain();
+        loadEmptyPreset();
+      }
+
+      await deletePreset({ presetId });
+    },
+    onSuccess: () => {
+      queryClient.refetchQueries({ queryKey: [...KEYS.getAllPresets] });
     },
   });
 };

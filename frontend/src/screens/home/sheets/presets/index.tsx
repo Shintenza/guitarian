@@ -1,4 +1,5 @@
-import { useAllPresets, useLoadPreset } from "@/api/presets";
+import { useAllPresets, useDeletePreset, useLoadPreset } from "@/api/presets";
+import { useConfirm } from "@/contexts/ConfirmationProvider";
 import { usePresetStore } from "@/stores/preset";
 import { PresetListItem, Spinner, Text } from "@/ui/components";
 import { ScrollView, View } from "react-native";
@@ -11,6 +12,8 @@ type PresetsSheetProps = Omit<HomeScreenSheetProps, "children">;
 const PresetsSheet = (props: PresetsSheetProps) => {
   const { data, isPending } = useAllPresets();
   const { id: activePresetId } = usePresetStore();
+  const { confirm } = useConfirm();
+  const { mutateAsync: deletePreset } = useDeletePreset();
 
   const {
     mutateAsync: loadPreset,
@@ -27,6 +30,18 @@ const PresetsSheet = (props: PresetsSheetProps) => {
     } catch {
       toast.error("Failed to load the preset");
     }
+  };
+
+  const onPresetDelete = async (id: number) => {
+    await confirm({
+      onConfirm: async () => {
+        try {
+          await deletePreset({ presetId: id });
+        } catch {
+          toast.error("Failed to delete the preset");
+        }
+      },
+    });
   };
 
   return (
@@ -48,6 +63,7 @@ const PresetsSheet = (props: PresetsSheetProps) => {
               key={preset.id}
               onPress={() => onPresetLoad(preset.id)}
               active={preset.id === activePresetId}
+              onDelete={() => onPresetDelete(preset.id)}
               loading={
                 loadPresetVariables?.presetId === preset.id &&
                 isLoadPresetPending

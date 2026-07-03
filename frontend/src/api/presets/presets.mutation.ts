@@ -1,8 +1,10 @@
 import { apiFetch } from "@/utils/api/fetch";
 import {
+  DeletePresetParams,
   LoadPresetParams,
   LoadPresetResponse,
   SavePresetRequest,
+  SavePresetResponse,
 } from "./types";
 
 export const loadPreset = async ({ presetId }: LoadPresetParams) => {
@@ -13,5 +15,12 @@ export const loadPreset = async ({ presetId }: LoadPresetParams) => {
 };
 
 export const savePreset = async (data: SavePresetRequest) => {
-  await apiFetch("/presets", { method: "POST", body: data });
+  return await apiFetch<SavePresetResponse>("/presets", {
+    method: "POST",
+    body: data,
+  });
+};
+
+export const deletePreset = async ({ presetId }: DeletePresetParams) => {
+  return await apiFetch(`/presets/preset/${presetId}`, { method: "DELETE" });
 };

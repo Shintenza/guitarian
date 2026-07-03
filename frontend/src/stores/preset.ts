@@ -7,10 +7,17 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { useShallow } from "zustand/react/shallow";
 
+export const EMPTY_PRESET = {
+  id: -1,
+  name: "New preset",
+  chain: [] as ChainPlugin[],
+} as const;
+
 type PresetStore = {
   id: number | null;
   name: string;
   originalChainSnapshot: ChainPlugin[] | null;
+  loadEmptyPreset: () => void;
   loadPreset: ({
     id,
     name,
@@ -25,9 +32,15 @@ type PresetStore = {
 export const presetStore = create<PresetStore>()(
   persist(
     (set) => ({
-      id: null,
-      name: "New preset",
-      originalChainSnapshot: [],
+      id: EMPTY_PRESET.id,
+      name: EMPTY_PRESET.name,
+      originalChainSnapshot: EMPTY_PRESET.chain,
+
+      loadEmptyPreset: () => {
+        set({
+          ...EMPTY_PRESET,
+        });
+      },
 
       loadPreset: ({ id, name, chain }) => {
         set({
@@ -46,14 +59,16 @@ export const presetStore = create<PresetStore>()(
 
 export const usePresetStore = () => {
   const { data: currentChain = [] } = useCurrentChain();
-  const { id, name, originalChainSnapshot, loadPreset } = presetStore(
-    useShallow((s) => ({
-      id: s.id,
-      name: s.name,
-      originalChainSnapshot: s.originalChainSnapshot,
-      loadPreset: s.loadPreset,
-    })),
-  );
+  const { id, name, originalChainSnapshot, loadPreset, loadEmptyPreset } =
+    presetStore(
+      useShallow((s) => ({
+        id: s.id,
+        name: s.name,
+        originalChainSnapshot: s.originalChainSnapshot,
+        loadPreset: s.loadPreset,
+        loadEmptyPreset: s.loadEmptyPreset,
+      })),
+    );
 
   const isDirty = useMemo(() => {
     const snapshot = originalChainSnapshot || [];
@@ -69,5 +84,6 @@ export const usePresetStore = () => {
     name,
     isDirty,
     loadPreset,
+    loadEmptyPreset,
   };
 };

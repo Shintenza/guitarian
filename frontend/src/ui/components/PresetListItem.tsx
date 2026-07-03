@@ -1,57 +1,64 @@
-import Spinner from "@/ui/components/Spinner";
 import Text from "@/ui/components/text/Text";
 import { withHaptics } from "@/utils/haptics";
 import { Pressable, View } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import IconButton from "./IconButton";
+import Spinner from "./Spinner";
 
 type PresetListItemProps = {
   active?: boolean;
   loading?: boolean;
   name: string;
   onPress: () => void;
+  onDelete: () => void;
 };
 
 const PresetListItem = ({
   name,
   active,
-  loading,
   onPress,
+  onDelete,
 }: PresetListItemProps) => {
-  const isContainerActive = active || loading;
+  const loading = false;
+  const { theme } = useUnistyles();
 
   return (
     <Pressable
       onPress={withHaptics(onPress)}
-      style={styles.container({ active: isContainerActive })}
+      style={styles.container({ active })}
     >
       <Text>{name}</Text>
-      {active && (
-        <View style={styles.pill}>
-          <Text variant="semiBold">Active</Text>
+      {loading ? (
+        <View style={styles.spinnerBackground}>
+          <Spinner color={theme.colors.text.primary} />
         </View>
+      ) : (
+        <IconButton iconName="delete" onPress={onDelete} />
       )}
-      {loading && <Spinner />}
     </Pressable>
   );
 };
 
 const styles = StyleSheet.create((theme) => ({
   container: ({ active }: { active?: boolean }) => ({
+    backgroundColor: theme.colors.background.tertiary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    justifyContent: "space-between",
+    flexDirection: "row",
+    borderRadius: 8,
+    alignItems: "center",
     ...(active
       ? {
-          backgroundColor: theme.colors.background.tertiary,
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          justifyContent: "space-between",
-          flexDirection: "row",
+          borderWidth: 2,
+          borderColor: theme.colors.orange,
         }
       : {}),
-    borderRadius: 8,
   }),
-  pill: {
-    backgroundColor: theme.colors.green,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+  spinnerBackground: {
+    padding: 6,
+    borderRadius: 24,
+    backgroundColor: theme.colors.orange,
   },
 }));
 

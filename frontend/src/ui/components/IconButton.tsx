@@ -1,7 +1,7 @@
+import { withHaptics } from "@/utils/haptics";
 import MaterialDesignIcons, {
   MaterialDesignIconsIconName,
 } from "@react-native-vector-icons/material-design-icons";
-import * as Haptics from "expo-haptics";
 import { Pressable, PressableProps, ViewStyle } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
@@ -33,10 +33,7 @@ const IconButton = ({
   return (
     <Pressable
       {...rest}
-      onPress={() => {
-        Haptics.selectionAsync();
-        onPress?.();
-      }}
+      onPress={withHaptics(onPress)}
       hitSlop={hitSlop[size]}
       style={[
         styles.container({ backgroundColor }),

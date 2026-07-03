@@ -1,6 +1,8 @@
 import { ReactNode, Ref, useImperativeHandle, useState } from "react";
-import { Modal, Pressable, View, ViewStyle } from "react-native";
+import { Keyboard, Modal, Pressable, ViewStyle } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { StyleSheet } from "react-native-unistyles";
+import ConditionalWrapper from "./ConditionalWrapper";
 
 export type PopupRef = {
   open: () => void;
@@ -12,6 +14,7 @@ export type PopupProps = {
   children: ReactNode;
   style?: ViewStyle;
   closeOnBackdropPress?: boolean;
+  avoidKeyboard?: boolean;
   onDismiss?: () => void;
 };
 
@@ -20,6 +23,7 @@ const ConfirmationPopup = ({
   children,
   style,
   closeOnBackdropPress = false,
+  avoidKeyboard = true,
   onDismiss,
 }: PopupProps) => {
   const [isOpened, setIsOpened] = useState(false);
@@ -30,8 +34,11 @@ const ConfirmationPopup = ({
   }));
 
   const handleDismiss = () => {
-    onDismiss?.();
-    setIsOpened(false);
+    Keyboard.dismiss();
+    if (closeOnBackdropPress) {
+      onDismiss?.();
+      setIsOpened(false);
+    }
   };
 
   return (
@@ -41,11 +48,19 @@ const ConfirmationPopup = ({
       onRequestClose={handleDismiss}
       animationType="fade"
     >
-      <Pressable
-        style={styles.centered}
-        onPress={closeOnBackdropPress ? handleDismiss : undefined}
-      >
-        <View style={[styles.container, style]}>{children}</View>
+      <Pressable style={styles.centered} onPress={handleDismiss}>
+        <ConditionalWrapper
+          enabled={avoidKeyboard}
+          wrapper={KeyboardAvoidingView}
+          wrapperProps={{ behavior: "padding", keyboardVerticalOffset: 24 }}
+        >
+          <Pressable
+            style={[styles.container, style]}
+            onPress={Keyboard.dismiss}
+          >
+            {children}
+          </Pressable>
+        </ConditionalWrapper>
       </Pressable>
     </Modal>
   );

@@ -24,3 +24,9 @@ pub struct LoadPresetResponse {
   pub name: String,
   pub chain: Vec<ChainItem>,
 }
+
+#[derive(Serialize)]
+pub struct SavePresetResponse {
+  pub name: String,
+  pub id: u32,
+}
