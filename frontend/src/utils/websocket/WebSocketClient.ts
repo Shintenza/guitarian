@@ -9,7 +9,6 @@ import {
 
 class WebSocketClient {
   private ws: WebSocket | null = null;
-  public isConnected: boolean = false;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private url: string | null = null;
   private listeners: Set<WebSocketListener> = new Set();
@@ -74,8 +73,11 @@ class WebSocketClient {
   }
 
   public sendMessage(message: SocketMessage): void {
-    if (this.ws && this.isConnected) {
-      this.ws.send(JSON.stringify(snakecaseKeys(message, { deep: true })));
+    if (this.ws && this.connectionState === SocketConnectionState.Open) {
+      const normalizedMessage = JSON.stringify(
+        snakecaseKeys(message, { deep: true }),
+      );
+      this.ws.send(normalizedMessage);
     }
   }
 
