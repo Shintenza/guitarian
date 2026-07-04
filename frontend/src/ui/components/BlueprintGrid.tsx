@@ -14,7 +14,7 @@ const BlueprintGrid = ({
   smallGridSize = 20,
   largeGridSize = 100,
   minorLineColor = "rgba(255, 255, 255, 0.03)",
-  majorLineColor = "rgba(255, 255, 255, 0.08)",
+  majorLineColor = "rgba(255, 255, 255, 0.03)",
   backgroundColor,
 }: GridBackgroundProps) => {
   const { theme } = useUnistyles();
@@ -71,7 +71,7 @@ const BlueprintGrid = ({
 const styles = StyleSheet.create(() => ({
   absoluteContainer: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: -1,
+    zIndex: 0,
   },
 }));
 

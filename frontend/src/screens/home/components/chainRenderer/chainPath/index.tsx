@@ -61,7 +61,12 @@ export default function ChainPath({
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      <Svg style={{ height: "100%", width: "100%" }}>
+      <Svg
+        style={{
+          height: "100%",
+          width: "100%",
+        }}
+      >
         <AnimatedPath
           d={pathData}
           stroke={theme.colors.darkOrange}

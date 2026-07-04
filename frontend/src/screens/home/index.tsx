@@ -19,6 +19,7 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
+      <BlueprintGrid />
       <Header
         isPresetsModalActive={isPresetsModalActive}
         onEdit={() => setIsEditMode(true)}
@@ -27,7 +28,6 @@ const HomeScreen = () => {
           await presetsSheetRef.current?.present();
         }}
       />
-      <BlueprintGrid />
       <ChainRenderer
         isEditMode={isEditMode}
         onChainItemPress={(pluginId) => paramsSheetRef.current?.open(pluginId)}
