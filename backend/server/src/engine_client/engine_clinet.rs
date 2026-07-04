@@ -3,7 +3,7 @@ use std::sync::Arc;
 use bincode::{config, decode_from_slice, encode_to_vec};
 use shared::{
   commands::{PushCommand, RequestCommand, RequestCommandError, RequestCommandResponse},
-  data::{ChainItem, PluginMetadata, PresetItem},
+  data::{ChainItem, PluginMetadata, PluginQuery, PresetItem},
   utils::socket::{get_sockets_endpoints, prepare_connect_endpoint},
 };
 use tokio::sync::Mutex;
@@ -82,8 +82,13 @@ impl EngineClient {
     Ok(decoded_response)
   }
 
-  pub async fn get_available_plugins(&self) -> Result<Vec<PluginMetadata>, RequestCommandError> {
-    let response = self.send_raw(RequestCommand::GetAvailablePlugins).await?;
+  pub async fn get_available_plugins(
+    &self,
+    query: PluginQuery,
+  ) -> Result<Vec<PluginMetadata>, RequestCommandError> {
+    let response = self
+      .send_raw(RequestCommand::GetAvailablePlugins(query))
+      .await?;
     let RequestCommandResponse::AvailablePlugins(data) = response else {
       return Err(RequestCommandError::DataFormatError);
     };

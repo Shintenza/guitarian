@@ -1,5 +1,6 @@
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
+use strum::EnumString;
 
 #[derive(Decode, Encode, Serialize, Deserialize)]
 pub enum ControlType {
@@ -26,11 +27,35 @@ pub struct ControlMetadata {
   pub scale_points: Vec<ScalePoint>,
 }
 
+#[derive(Decode, Encode, Serialize, Deserialize, EnumString, PartialEq)]
+#[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum PluginClass {
+  Simulator,
+  Amplifier,
+  Distortion,
+  Eq,
+  Chorus,
+  Modulator,
+  Compressor,
+  Delay,
+  PitchShifter,
+  Expander,
+  Flanger,
+  Filter,
+  Reverb,
+  Phaser,
+  Envelope,
+  Gate,
+  Utility,
+  Other,
+}
+
 #[derive(Decode, Encode, Serialize, Deserialize)]
 pub struct PluginMetadata {
   pub name: String,
   pub uri: String,
-  pub class: String,
+  pub class: PluginClass,
   pub controls_metadata: Vec<ControlMetadata>,
 }
 
@@ -51,4 +76,17 @@ pub struct ChainItem {
 pub struct PresetItem {
   pub plugin_uri: String,
   pub controls_state: Vec<ControlState>,
+}
+
+#[derive(Encode, Decode, Serialize, Deserialize)]
+pub struct PluginFilters {
+  pub name: Option<String>,
+  pub class: Option<Vec<PluginClass>>,
+  pub uri: Option<Vec<String>>,
+}
+
+#[derive(Encode, Decode, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct PluginQuery {
+  pub filters: Option<PluginFilters>,
 }

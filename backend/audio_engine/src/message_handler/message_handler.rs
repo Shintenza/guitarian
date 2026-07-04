@@ -42,8 +42,8 @@ impl MessageHandler {
   ) {
     let response: RequestCommandResponse;
     match request {
-      RequestCommand::GetAvailablePlugins => {
-        let plugins_vec = self.plugin_manager.get_plugins();
+      RequestCommand::GetAvailablePlugins(query) => {
+        let plugins_vec = self.plugin_manager.get_plugins(query);
         response = RequestCommandResponse::AvailablePlugins(plugins_vec);
         tx_pub.send(StateChangeEvent::PresetLoaded).await;
       }

@@ -1,7 +1,7 @@
 use std::sync::atomic::Ordering;
 
 use ringbuf::HeapProd;
-use shared::data::{ChainItem, ControlState, PluginMetadata, PresetItem};
+use shared::data::{ChainItem, ControlState, PluginMetadata, PluginQuery, PresetItem};
 
 use crate::plugin_manager::plugin_chain::PluginChain;
 use crate::plugin_manager::plugin_repository::{LV2PluginRepository, PluginRepository};
@@ -46,8 +46,8 @@ impl PluginManager {
     }
   }
 
-  pub fn get_plugins(&self) -> Vec<PluginMetadata> {
-    let plugins = self.lv2_repository.get_all_plugins();
+  pub fn get_plugins(&self, query: PluginQuery) -> Vec<PluginMetadata> {
+    let plugins = self.lv2_repository.get_all_plugins(query.filters);
     plugins
   }
 

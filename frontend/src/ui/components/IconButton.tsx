@@ -7,12 +7,16 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
 type IconButtonSize = "tiny" | "regular" | "huge";
 
+type IconButtonVariant = "solid" | "outline";
+
 type IconButtonProps = {
   iconName: MaterialDesignIconsIconName;
   backgroundColor?: string;
   size?: IconButtonSize;
+  variant?: IconButtonVariant;
   containerStyle?: ViewStyle;
   style?: ViewStyle;
+  rounded?: boolean;
   onPress?: () => void;
 } & Omit<PressableProps, "style">;
 
@@ -20,6 +24,8 @@ const IconButton = ({
   iconName,
   backgroundColor,
   size = "regular",
+  variant = "solid",
+  rounded = true,
   containerStyle,
   onPress,
   ...rest
@@ -27,6 +33,7 @@ const IconButton = ({
   const { theme } = useUnistyles();
 
   styles.useVariants({
+    variant,
     size,
   });
 
@@ -36,7 +43,7 @@ const IconButton = ({
       onPress={withHaptics(onPress)}
       hitSlop={hitSlop[size]}
       style={[
-        styles.container({ backgroundColor }),
+        styles.container({ backgroundColor, rounded }),
         containerStyle,
         rest.style,
       ]}
@@ -63,14 +70,29 @@ const hitSlop: Record<IconButtonSize, number> = {
 };
 
 export const styles = StyleSheet.create((theme) => ({
-  container: ({ backgroundColor }: { backgroundColor?: string }) => ({
-    backgroundColor: backgroundColor ?? theme.colors.orange,
-    borderRadius: 1000,
+  container: ({
+    backgroundColor,
+    rounded,
+  }: {
+    backgroundColor?: string;
+    rounded?: boolean;
+  }) => ({
+    borderRadius: rounded ? 1000 : 8,
     justifyContent: "center",
     alignItems: "center",
     alignSelf: "flex-start",
+    borderWidth: 2,
 
     variants: {
+      variant: {
+        solid: {
+          borderColor: "transparent",
+          backgroundColor: backgroundColor ?? theme.colors.orange,
+        },
+        outline: {
+          borderColor: backgroundColor ?? theme.colors.orange,
+        },
+      },
       size: {
         tiny: {
           padding: 2,

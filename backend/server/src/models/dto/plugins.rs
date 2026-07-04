@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use shared::data::PluginMetadata;
+use shared::data::{PluginClass, PluginMetadata};
 
 #[derive(Serialize, Deserialize)]
 pub struct ListPluginsResponse {
@@ -19,4 +19,11 @@ pub enum WebSocketClientMessage {
 #[derive(Serialize)]
 pub struct WebSocketNotificationMessage {
   pub message: String,
+}
+
+#[derive(Deserialize)]
+pub struct ListPluginsQuery {
+  pub name: Option<String>,
+  pub class: Option<Vec<PluginClass>>,
+  pub uri: Option<Vec<String>>,
 }

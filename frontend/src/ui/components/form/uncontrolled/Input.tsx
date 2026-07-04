@@ -1,18 +1,25 @@
 import Text from "@/ui/components/text/Text";
 import { fonts } from "@/ui/typography";
-import { TextInput, TextInputProps, View } from "react-native";
+import { TextInput, TextInputProps, View, ViewStyle } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
-type InputProps = {
+export type InputProps = {
   value: string;
   label?: string;
+  containerStyle?: ViewStyle;
   onChange?: (value: string) => void;
 } & Omit<TextInputProps, "onChange">;
 
-const Input = ({ value, label, onChange, ...rest }: InputProps) => {
+const Input = ({
+  value,
+  label,
+  containerStyle,
+  onChange,
+  ...rest
+}: InputProps) => {
   const { theme } = useUnistyles();
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       {label && <Text>{label}</Text>}
 
       <TextInput
@@ -29,7 +36,7 @@ const Input = ({ value, label, onChange, ...rest }: InputProps) => {
 
 const styles = StyleSheet.create((theme) => ({
   container: {
-    gap: 8,
+    gap: 6,
   },
   input: {
     fontFamily: fonts.InterRegular,

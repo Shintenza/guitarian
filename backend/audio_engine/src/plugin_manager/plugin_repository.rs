@@ -1,17 +1,16 @@
 use std::sync::Arc;
 
-use atomic_float::AtomicF32;
 use livi::{Features, World, event::LV2AtomSequence};
-use shared::data::{ControlState, PluginMetadata};
+use shared::data::{ControlState, PluginFilters, PluginMetadata};
 
 use crate::plugin_manager::{
   plugin_instance::{AtomSequencePorts, LV2PluginInstance, PluginInstance},
-  types::{InitializedPlugin, PortConfig},
+  types::InitializedPlugin,
   utils::{get_lv2_plugin_controls_metadata, get_lv2_plugin_metadata},
 };
 
 pub trait PluginRepository {
-  fn get_all_plugins(&self) -> Vec<PluginMetadata>;
+  fn get_all_plugins(&self, filters: Option<PluginFilters>) -> Vec<PluginMetadata>;
   fn get_plugin_instance(&self, plugin_uri: &str) -> Option<impl PluginInstance>;
   fn get_initialized_plugin(&self, plugin_uri: &str) -> Option<InitializedPlugin>;
   fn get_plugin_default_port_values(&self, plugin_uri: &str) -> Option<Vec<ControlState>>;
@@ -43,7 +42,7 @@ impl PluginRepository for LV2PluginRepository {
     Some(get_lv2_plugin_metadata(&plugin))
   }
 
-  fn get_all_plugins(&self) -> Vec<PluginMetadata> {
+  fn get_all_plugins(&self, filters: Option<PluginFilters>) -> Vec<PluginMetadata> {
     let mut plugins: Vec<PluginMetadata> = Vec::new();
 
     for plugin in self.world.iter_plugins() {
@@ -52,6 +51,30 @@ impl PluginRepository for LV2PluginRepository {
       }
 
       let plugin_metadata = get_lv2_plugin_metadata(&plugin);
+
+      if let Some(filter) = &filters {
+        let name_fails = filter.name.as_ref().is_some_and(|name| {
+          !plugin_metadata
+            .name
+            .to_lowercase()
+            .contains(&name.to_lowercase())
+        });
+
+        let class_fails = filter
+          .class
+          .as_ref()
+          .is_some_and(|class| !class.contains(&plugin_metadata.class));
+
+        let uri_fails = filter
+          .uri
+          .as_ref()
+          .is_some_and(|uri| uri.contains(&plugin_metadata.uri));
+
+        if class_fails || name_fails || uri_fails {
+          continue;
+        }
+      }
+
       plugins.push(plugin_metadata);
     }
 

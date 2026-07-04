@@ -61,14 +61,15 @@ const styles = StyleSheet.create((theme) => ({
   container: ({ color }: { color?: ColorValue }) => ({
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 2,
     variants: {
       variant: {
         solid: {
+          borderColor: "transparent",
           backgroundColor: color ?? theme.colors.orange,
         },
         outline: {
           borderColor: color ?? theme.colors.orange,
-          borderWidth: 2,
         },
       },
       size: {

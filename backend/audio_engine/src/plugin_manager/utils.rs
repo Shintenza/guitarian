@@ -1,6 +1,10 @@
 use atomic_float::AtomicF32;
+use heck::ToSnakeCase;
 use livi::{Plugin, PortValueType, ScalePoints};
-use shared::data::{ControlMetadata, ControlState, ControlType, PluginMetadata, ScalePoint};
+use shared::data::{
+  ControlMetadata, ControlState, ControlType, PluginClass, PluginMetadata, ScalePoint,
+};
+use std::str::FromStr;
 
 use crate::plugin_manager::types::PortConfig;
 
@@ -11,6 +15,13 @@ pub fn get_control_type(port_value: &PortValueType) -> ControlType {
     PortValueType::Toggled => ControlType::Toggled,
     PortValueType::Enumeration => ControlType::Enumeration,
   }
+}
+
+pub fn get_plugin_class(class_name: &str) -> PluginClass {
+  let normalized = class_name.trim().to_snake_case();
+  let plugin_class = PluginClass::from_str(&normalized).unwrap_or(PluginClass::Other);
+
+  plugin_class
 }
 
 pub fn get_scale_points_vec(scale_points: ScalePoints) -> Vec<ScalePoint> {
@@ -50,7 +61,8 @@ pub fn get_lv2_plugin_metadata(plugin: &Plugin) -> PluginMetadata {
     uri: plugin.uri(),
     class: {
       let name = plugin.classes().nth(0).unwrap_or("UNKNOWN");
-      name.strip_suffix(" Plugin").unwrap_or(name).to_string()
+      let cleaned_name = name.strip_suffix(" Plugin").unwrap_or(name);
+      get_plugin_class(cleaned_name)
     },
     controls_metadata,
   }

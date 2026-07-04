@@ -1,10 +1,10 @@
 use bincode::{Decode, Encode};
 
-use crate::data::{ChainItem, PluginMetadata, PresetItem};
+use crate::data::{ChainItem, PluginMetadata, PluginQuery, PresetItem};
 
 #[derive(Encode, Decode)]
 pub enum RequestCommand {
-  GetAvailablePlugins,
+  GetAvailablePlugins(PluginQuery),
   GetCurrentState,
   LoadPlugin(String, usize),
   LoadPreset(Vec<PresetItem>),

@@ -19,3 +19,8 @@ export type PluginMetadata = {
 export type GetAllPluginsResponse = {
   plugins: PluginMetadata[];
 };
+
+export type GetAllPluginsSearchParams = {
+  name?: string;
+  class?: EffectClass[];
+};

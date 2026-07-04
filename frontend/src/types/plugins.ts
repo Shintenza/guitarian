@@ -4,11 +4,24 @@ export type Option<T> = {
 };
 
 export const EffectsClasses = {
-  Distortion: "Distortion",
-  Amp: "Amplifier",
-  Sim: "Simulator",
-  Envelope: "Envelope",
-  Gate: "Gate",
+  Simulator: "simulator",
+  Amplifier: "amplifier",
+  Distortion: "distortion",
+  Eq: "eq",
+  Chorus: "chorus",
+  Modulator: "modulator",
+  Compressor: "compressor",
+  Delay: "delay",
+  PitchShifter: "pitch_shifter",
+  Expander: "expander",
+  Flanger: "flanger",
+  Filter: "filter",
+  Reverb: "reverb",
+  Phaser: "phaser",
+  Envelope: "envelope",
+  Gate: "gate",
+  Utility: "utility",
+  Other: "other",
 } as const;
 
 export type EffectClass = (typeof EffectsClasses)[keyof typeof EffectsClasses];
