@@ -1,9 +1,14 @@
 use bincode::{Decode, Encode};
 
-use crate::data::{ChainItem, PluginMetadata, PluginQuery, PresetItem};
+use crate::data::{
+  AudioConnections, AvailableAudioDevices, ChainItem, PluginMetadata, PluginQuery, PresetItem,
+};
 
 #[derive(Encode, Decode)]
 pub enum RequestCommand {
+  GetAvailableAudioDevices,
+  GetCurrentConnectionsState,
+  ConnectPorts(String, Vec<String>),
   GetAvailablePlugins(PluginQuery),
   GetCurrentState,
   LoadPlugin(String, usize),
@@ -20,10 +25,13 @@ pub enum PushCommand {
 
 #[derive(Encode, Decode)]
 pub enum RequestCommandResponse {
+  AvaialbleAudioDevices(AvailableAudioDevices),
+  CurrentConnectionsState(AudioConnections),
   AvailablePlugins(Vec<PluginMetadata>),
   CurrentState(Vec<ChainItem>),
   LoadedPlugin(ChainItem),
   ChangePluginPosition,
+  ConnectedPorts,
   UnloadPlugin,
   RemoveAll,
   Error(String),

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use strum::EnumString;
@@ -89,4 +91,16 @@ pub struct PluginFilters {
 #[serde(default)]
 pub struct PluginQuery {
   pub filters: Option<PluginFilters>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default, Encode, Decode)]
+pub struct AudioConnections {
+  pub input: Option<String>,
+  pub outputs: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Encode, Decode, Debug, Clone, Default)]
+pub struct AvailableAudioDevices {
+  pub input_ports: Vec<String>,
+  pub output_devices: Vec<String>,
 }

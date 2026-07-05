@@ -19,5 +19,8 @@ zeromq = { workspace = true }
 bincode = { workspace = true }
 dotenvy = { workspace = true }
 strum = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 
 shared = { path = "../shared" }

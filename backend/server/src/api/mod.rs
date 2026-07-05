@@ -4,6 +4,7 @@ use crate::context::AppContext;
 
 mod chain;
 mod plugins;
+mod ports;
 mod presets;
 
 pub fn router() -> Router<AppContext> {
@@ -11,4 +12,5 @@ pub fn router() -> Router<AppContext> {
     .nest("/plugins", plugins::router())
     .nest("/presets", presets::router())
     .nest("/chain", chain::router())
+    .nest("/ports", ports::router())
 }

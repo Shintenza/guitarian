@@ -1,8 +1,11 @@
 use bincode::{config, encode_to_vec};
 use shared::{
   commands::{
-    ParamChangedPayload, PushCommand, RequestCommand, RequestCommandResponse, StateChangeEvent,
+    ParamChangedPayload, PushCommand, RequestCommand,
+    RequestCommandResponse::{self, ConnectedPorts, CurrentConnectionsState},
+    StateChangeEvent,
   },
+  data::{AudioConnections, AvailableAudioDevices},
   utils::socket::{get_sockets_endpoints, prepare_bind_endpoint},
 };
 use tokio::{
@@ -13,19 +16,24 @@ use tokio_util::sync::CancellationToken;
 use zeromq::{PubSocket, PullSocket, RepSocket, Socket, SocketRecv, SocketSend};
 
 use crate::{
-  decode_msg, message_handler::message_handler_controller::MessageHandlerController,
+  decode_msg,
+  jack_client::client::AudioEngine,
+  message_handler::message_handler_controller::MessageHandlerController,
   plugin_manager::manager::PluginManager,
+  utils::ports::{PortType, extract_unique_ports},
 };
 
 pub struct MessageHandler {
   cancel_token: CancellationToken,
+  audio_engine: AudioEngine,
   plugin_manager: PluginManager,
 }
 
 impl MessageHandler {
-  pub fn new(plugin_manager: PluginManager) -> Self {
+  pub fn new(audio_engine: AudioEngine, plugin_manager: PluginManager) -> Self {
     Self {
       cancel_token: CancellationToken::new(),
+      audio_engine,
       plugin_manager,
     }
   }
@@ -80,6 +88,42 @@ impl MessageHandler {
             response = RequestCommandResponse::Error("failed to load plugin".to_string());
           }
         }
+      }
+      RequestCommand::GetAvailableAudioDevices => {
+        /*this is a perspective of JACK, meaning physical inputs are **outputting** signal that can be
+         * consumed by output devices that have audio **input** ports
+         */
+        let (inputs, outputs) = self.audio_engine.get_audio_devices();
+        response = RequestCommandResponse::AvaialbleAudioDevices(AvailableAudioDevices {
+          input_ports: outputs,
+          output_devices: inputs,
+        })
+      }
+      RequestCommand::GetCurrentConnectionsState => {
+        let state = self
+          .audio_engine
+          .get_current_connections_state()
+          .unwrap_or_default();
+        let device_oriented_state = AudioConnections {
+          input: state.connected_to_input,
+          outputs: extract_unique_ports(
+            state
+              .connected_to_output
+              .iter()
+              .cloned()
+              .collect::<Vec<_>>(),
+            PortType::Input,
+          ),
+        };
+        response = CurrentConnectionsState(device_oriented_state)
+      }
+      RequestCommand::ConnectPorts(audio_device_input, audio_device_outputs) => {
+        for audio_device_output in audio_device_outputs {
+          self
+            .audio_engine
+            .connect_devices(audio_device_output, audio_device_input.clone());
+        }
+        response = ConnectedPorts
       }
     }
 

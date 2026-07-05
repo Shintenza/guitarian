@@ -3,7 +3,9 @@ use std::sync::Arc;
 use bincode::{config, decode_from_slice, encode_to_vec};
 use shared::{
   commands::{PushCommand, RequestCommand, RequestCommandError, RequestCommandResponse},
-  data::{ChainItem, PluginMetadata, PluginQuery, PresetItem},
+  data::{
+    AudioConnections, AvailableAudioDevices, ChainItem, PluginMetadata, PluginQuery, PresetItem,
+  },
   utils::socket::{get_sockets_endpoints, prepare_connect_endpoint},
 };
 use tokio::sync::Mutex;
@@ -164,5 +166,44 @@ impl EngineClient {
     let req_bytes = encode_to_vec(command, config::standard()).unwrap();
     let mut socket = self.push_socket.lock().await;
     socket.send(req_bytes.into()).await;
+  }
+
+  pub async fn get_audio_deivces(&self) -> Result<AvailableAudioDevices, RequestCommandError> {
+    let response = self
+      .send_raw(RequestCommand::GetAvailableAudioDevices)
+      .await?;
+    let RequestCommandResponse::AvaialbleAudioDevices(data) = response else {
+      return Err(RequestCommandError::DataFormatError);
+    };
+
+    Ok(data)
+  }
+
+  pub async fn get_current_connections_state(
+    &self,
+  ) -> Result<AudioConnections, RequestCommandError> {
+    let response = self
+      .send_raw(RequestCommand::GetCurrentConnectionsState)
+      .await?;
+    let RequestCommandResponse::CurrentConnectionsState(data) = response else {
+      return Err(RequestCommandError::DataFormatError);
+    };
+
+    Ok(data)
+  }
+
+  pub async fn connect_ports(
+    &self,
+    input_device_port: String,
+    output_devices: Vec<String>,
+  ) -> Result<(), RequestCommandError> {
+    self
+      .send_raw(RequestCommand::ConnectPorts(
+        input_device_port,
+        output_devices,
+      ))
+      .await?;
+
+    Ok(())
   }
 }
