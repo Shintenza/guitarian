@@ -1,25 +1,50 @@
-import { Control, Controller, FieldValues, Path } from "react-hook-form";
-import { DropDownPickerProps } from "react-native-dropdown-picker";
-import Input from "../uncontrolled/Input";
+import {
+  Control,
+  Controller,
+  ControllerProps,
+  FieldValues,
+  Path,
+  PathValue,
+} from "react-hook-form";
+import DropdownMenu, { DropdownMenuProps } from "../uncontrolled/DropdownMenu";
 
-type ControlledInputProps<T extends FieldValues> = {
-  name: Path<T>;
-  control: Control<T>;
-} & Omit<DropDownPickerProps<T>, "value" | "onChange">;
+type ArrayElement<T> = T extends (infer U)[] ? U : never;
+type ControlledInputProps<
+  TFieldValues extends FieldValues,
+  TName extends Path<TFieldValues>,
+> = {
+  name: TName;
+  control: Control<TFieldValues>;
+  rules: ControllerProps<TFieldValues>["rules"];
+} & Omit<
+  DropdownMenuProps<ArrayElement<PathValue<TFieldValues, TName>>>,
+  "value" | "onChange"
+>;
 
-const ControlledInput = <T extends FieldValues>({
+const ControlledDropdown = <
+  TFieldValues extends FieldValues,
+  TName extends Path<TFieldValues>,
+>({
   name,
   control,
-}: ControlledInputProps<T>) => {
+  rules,
+  ...rest
+}: ControlledInputProps<TFieldValues, TName>) => {
   return (
     <Controller
       name={name}
       control={control}
-      render={({ field: { value, onChange } }) => (
-        <Input value={value} onChange={onChange} />
+      rules={rules}
+      render={({ field: { value, onChange }, fieldState: { error } }) => (
+        <DropdownMenu
+          value={value}
+          onChange={onChange}
+          {...rest}
+          error={error?.message}
+        />
       )}
     />
   );
 };
 
-export default ControlledInput;
+export default ControlledDropdown;

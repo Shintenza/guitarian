@@ -12,6 +12,7 @@ type IconButtonVariant = "solid" | "outline";
 type IconButtonProps = {
   iconName: MaterialDesignIconsIconName;
   backgroundColor?: string;
+  iconSize?: number;
   size?: IconButtonSize;
   variant?: IconButtonVariant;
   containerStyle?: ViewStyle;
@@ -24,6 +25,7 @@ const IconButton = ({
   iconName,
   backgroundColor,
   size = "regular",
+  iconSize,
   variant = "solid",
   rounded = true,
   containerStyle,
@@ -51,13 +53,13 @@ const IconButton = ({
       <MaterialDesignIcons
         name={iconName}
         color={theme.colors.text.primary}
-        size={iconSize[size]}
+        size={iconSize ?? fixedIconSize[size]}
       />
     </Pressable>
   );
 };
 
-const iconSize: Record<IconButtonSize, number> = {
+const fixedIconSize: Record<IconButtonSize, number> = {
   tiny: 13,
   regular: 18,
   huge: 32,

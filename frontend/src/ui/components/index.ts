@@ -1,3 +1,4 @@
+export { default as BackButton } from "./BackButton";
 export { default as BlueprintGrid } from "./BlueprintGrid";
 export { default as Button } from "./Button";
 export { default as ConditionalWrapper } from "./ConditionalWrapper";
@@ -11,6 +12,7 @@ export { default as Slider } from "./form/uncontrolled/Slider";
 export { default as IconButton } from "./IconButton";
 export { default as Popup } from "./Popup";
 export { default as PresetListItem } from "./PresetListItem";
+export { default as SettingsOption } from "./SettingsOption";
 export { default as Spinner } from "./Spinner";
 export { default as Switch } from "./Switch";
 export * from "./text";
