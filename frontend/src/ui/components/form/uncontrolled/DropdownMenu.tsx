@@ -1,6 +1,6 @@
 import { Option } from "@/types/plugins";
 import { useLatestRef } from "@/utils/ref";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -23,16 +23,18 @@ const DropdownMenu = <T,>({
   error,
   onChange,
 }: DropdownMenuProps<T>) => {
-  const initialValue = value ?? [];
-  const normalizedInitialValue = Array.isArray(initialValue)
-    ? initialValue
-    : [initialValue];
   const { theme } = useUnistyles();
-  const [innerValue, setInnerValue] = useState<T[] | T | null>(
-    normalizedInitialValue,
-  );
+  const [innerValue, setInnerValue] = useState<T[] | T | null>(value ?? null);
   const onChangeRef = useLatestRef(onChange);
   const [open, setOpen] = useState(false);
+  const syncedInitially = useRef(false);
+
+  useEffect(() => {
+    if (!syncedInitially.current && value) {
+      setInnerValue(value);
+      syncedInitially.current = true;
+    }
+  }, [value]);
 
   useEffect(() => {
     onChangeRef.current(innerValue as T);

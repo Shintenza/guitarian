@@ -118,11 +118,9 @@ impl MessageHandler {
         response = CurrentConnectionsState(device_oriented_state)
       }
       RequestCommand::ConnectPorts(audio_device_input, audio_device_outputs) => {
-        for audio_device_output in audio_device_outputs {
-          self
-            .audio_engine
-            .connect_devices(audio_device_output, audio_device_input.clone());
-        }
+        self
+          .audio_engine
+          .set_audio_connections(audio_device_input, audio_device_outputs);
         response = ConnectedPorts
       }
     }

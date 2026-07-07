@@ -1,4 +1,8 @@
-import { useAvailableConnections, useConnectPorts } from "@/api/ports";
+import {
+  useAvailableConnections,
+  useConnectPorts,
+  useCurrentPortsConnections,
+} from "@/api/ports";
 import { ConnectPortsRequest } from "@/api/ports/types";
 import {
   BackButton,
@@ -8,7 +12,7 @@ import {
   Text,
 } from "@/ui/components";
 import { useRouter } from "expo-router";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Path, useForm } from "react-hook-form";
 import { View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
@@ -18,7 +22,9 @@ import { sharedStyles } from "./shared";
 const AudioDevicesSettings = () => {
   const { back } = useRouter();
   const { theme } = useUnistyles();
-  const { handleSubmit, control } = useForm<ConnectPortsRequest>();
+  const { data: currentConnections, isPending: areCurrentConnectionsPending } =
+    useCurrentPortsConnections();
+  const { handleSubmit, control, reset } = useForm<ConnectPortsRequest>();
   const { mutateAsync: connectPorts, isPending: isConnectPortsPending } =
     useConnectPorts();
 
@@ -65,6 +71,17 @@ const AudioDevicesSettings = () => {
     ],
   );
 
+  useEffect(() => {
+    if (!currentConnections) return;
+
+    reset({
+      inputDevicePort: currentConnections.input,
+      outputDevices: currentConnections.outputs,
+    });
+  }, [currentConnections, reset]);
+
+  const isLoading = areCurrentConnectionsPending || availableConnectionsPending;
+
   return (
     <View style={sharedStyles.container}>
       <View style={sharedStyles.header}>
@@ -72,8 +89,8 @@ const AudioDevicesSettings = () => {
         <Text size="H1">Audio devices</Text>
       </View>
       <View style={style.container}>
-        {availableConnectionsPending && <Spinner />}
-        {availableConnections &&
+        {isLoading && <Spinner size="large" />}
+        {!isLoading &&
           sectionsProps.map((section) => (
             <View style={style.section} key={section.name}>
               <View>
@@ -106,6 +123,7 @@ const style = StyleSheet.create((theme) => ({
     gap: 12,
     borderRadius: 16,
     alignItems: "center",
+    justifyContent: "center",
     minHeight: 200,
   },
   section: { gap: 8 },

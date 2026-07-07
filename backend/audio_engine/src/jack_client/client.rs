@@ -73,7 +73,7 @@ impl AudioEngine {
     self.async_client.as_client().sample_rate()
   }
 
-  fn get_ports(&self, port_type: PortType, name: Option<String>) -> Vec<String> {
+  fn get_ports(&self, port_type: PortType, name: Option<&String>) -> Vec<String> {
     let audio_type = "32 bit float mono audio";
     let mut flags = PortFlags::IS_TERMINAL | PortFlags::IS_PHYSICAL;
     match port_type {
@@ -86,7 +86,7 @@ impl AudioEngine {
     }
 
     let pattern: Option<String> = name.map(|n| match port_type {
-      PortType::Output => n,
+      PortType::Output => n.clone(),
       PortType::Input => format!("^{n}:"),
     });
 
@@ -109,24 +109,69 @@ impl AudioEngine {
     return Ok(state.clone());
   }
 
-  pub fn connect_devices(&self, device_in: String, port_out: String) -> Result<()> {
-    let input_ports = self.get_ports(PortType::Input, Some(device_in));
-    let output_ports = self.get_ports(PortType::Output, Some(port_out));
-
-    if let Some(client_input_port) = self
+  pub fn set_audio_connections(
+    &self,
+    audio_source_port: String,
+    destination_devices: Vec<String>,
+  ) -> Result<()> {
+    let client_in_port = self
       .async_client
       .as_client()
       .port_by_name(&self.ports_names.input)
+      .unwrap();
+
+    let destination_devices_ports = destination_devices
+      .iter()
+      .flat_map(|item| self.get_ports(PortType::Input, Some(item)))
+      .collect::<Vec<String>>();
+
+    let needs_input_change: bool;
+    let to_be_added: Vec<String>;
+    let to_be_removed: Vec<String>;
+
     {
-      let _ = self.async_client.as_client().disconnect(&client_input_port);
+      let connections_state = self.connections_state.lock().unwrap();
+
+      needs_input_change = match &connections_state.connected_to_input {
+        Some(current) => *current != audio_source_port,
+        None => true,
+      };
+
+      to_be_added = destination_devices_ports
+        .iter()
+        .filter(|i| !connections_state.connected_to_output.contains(*i))
+        .cloned()
+        .collect();
+
+      to_be_removed = connections_state
+        .connected_to_output
+        .iter()
+        .filter(|i| !destination_devices_ports.contains(i))
+        .cloned()
+        .collect();
     }
 
-    connect_ports(
-      self.async_client.as_client(),
-      &self.ports_names,
-      &output_ports,
-      &input_ports,
-    )?;
+    if needs_input_change {
+      self.async_client.as_client().disconnect(&client_in_port)?;
+      self
+        .async_client
+        .as_client()
+        .connect_ports_by_name(&audio_source_port, &self.ports_names.input)?;
+    }
+
+    for port in to_be_added {
+      self
+        .async_client
+        .as_client()
+        .connect_ports_by_name(&self.ports_names.output, &port)?;
+    }
+
+    for port in to_be_removed {
+      self
+        .async_client
+        .as_client()
+        .disconnect_ports_by_name(&self.ports_names.output, &port)?;
+    }
 
     Ok(())
   }
