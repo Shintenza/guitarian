@@ -6,7 +6,7 @@ use shared::data::{ChainItem, ControlState, PluginMetadata, PluginQuery, PresetI
 use crate::plugin_manager::plugin_chain::PluginChain;
 use crate::plugin_manager::plugin_repository::{LV2PluginRepository, PluginRepository};
 use crate::plugin_manager::types::{
-  AudioCommand, InitializedPlugin, InstanceConfig, PluginActionError,
+  AudioCommand, ChainOperationError, InitializedPlugin, InstanceConfig,
 };
 
 pub struct PluginManager {
@@ -51,14 +51,18 @@ impl PluginManager {
     plugins
   }
 
-  pub fn clear(&mut self) {
-    self.plugin_chain.clear();
+  pub fn clear(&mut self) -> Result<(), ChainOperationError> {
+    self.plugin_chain.clear()
   }
 
-  pub fn change_plugin_position(&mut self, plugin_id: u32, new_position: usize) {
+  pub fn change_plugin_position(
+    &mut self,
+    plugin_id: u32,
+    new_position: usize,
+  ) -> Result<(), ChainOperationError> {
     self
       .plugin_chain
-      .change_plugin_position(plugin_id, new_position);
+      .change_plugin_position(plugin_id, new_position)
   }
 
   pub fn set_plugin_port_value(&self, plugin_id: u32, port_id: u32, new_value: f32) {
@@ -67,8 +71,8 @@ impl PluginManager {
       .set_plugin_port_value(plugin_id, port_id, new_value);
   }
 
-  pub fn unload_plugin(&mut self, id: u32) -> Result<(), PluginActionError> {
-    self.plugin_chain.remove_plugin(id);
+  pub fn unload_plugin(&mut self, id: u32) -> Result<(), ChainOperationError> {
+    self.plugin_chain.remove_plugin(id)?;
     Ok(())
   }
 
@@ -76,11 +80,11 @@ impl PluginManager {
     &mut self,
     position: usize,
     uri: &str,
-  ) -> Result<ChainItem, PluginActionError> {
+  ) -> Result<ChainItem, ChainOperationError> {
     let initialized_plugin = self
       .lv2_repository
       .get_initialized_plugin(uri)
-      .ok_or(PluginActionError::NotFound)?;
+      .ok_or(ChainOperationError::NotFound)?;
 
     let result = self.plugin_chain.add_plugin(position, initialized_plugin);
     Ok(self.instance_config_to_chain_item(result))
@@ -101,14 +105,14 @@ impl PluginManager {
   pub fn load_preset(
     &mut self,
     preset: Vec<PresetItem>,
-  ) -> Result<Vec<ChainItem>, PluginActionError> {
+  ) -> Result<Vec<ChainItem>, ChainOperationError> {
     let mut initialized_plugins: Vec<InitializedPlugin> = Vec::with_capacity(preset.len());
 
     for preset_item in preset {
       let plugin_instance = self
         .lv2_repository
         .get_plugin_instance(&preset_item.plugin_uri)
-        .ok_or(PluginActionError::NotFound)?;
+        .ok_or(ChainOperationError::NotFound)?;
       initialized_plugins.push(InitializedPlugin {
         instance: Box::new(plugin_instance),
         plugin_uri: preset_item.plugin_uri,

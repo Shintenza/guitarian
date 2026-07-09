@@ -68,13 +68,15 @@ impl PluginChain {
     instance_config
   }
 
-  pub fn remove_plugin(&mut self, plugin_id: u32) {
+  pub fn remove_plugin(&mut self, plugin_id: u32) -> Result<(), ChainOperationError> {
     self
       .producer
-      .try_push(AudioCommand::RemovePlugin(plugin_id));
+      .try_push(AudioCommand::RemovePlugin(plugin_id))
+      .map_err(|_| ChainOperationError::BufferError)?;
     if let Some(index) = self.chain.iter().position(|p| p.id == plugin_id) {
       self.chain.remove(index);
     }
+    Ok(())
   }
 
   pub fn change_plugin_position(

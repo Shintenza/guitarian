@@ -5,6 +5,13 @@ use crate::data::{
 };
 
 #[derive(Encode, Decode)]
+pub enum RequestError {
+  NotFound,
+  InvalidArguments,
+  InternalError,
+}
+
+#[derive(Encode, Decode)]
 pub enum RequestCommand {
   GetAvailableAudioDevices,
   GetCurrentConnectionsState,
@@ -35,19 +42,6 @@ pub enum RequestCommandResponse {
   UnloadPlugin,
   RemoveAll,
   Error(String),
-}
-
-pub enum RequestCommandError {
-  DataFormatError,
-  ConnectionError,
-}
-
-pub trait CommandWithResponse {
-  type Response;
-  fn into_request(self) -> RequestCommand;
-  fn extract_response(
-    response: RequestCommandResponse,
-  ) -> Result<Self::Response, RequestCommandError>;
 }
 
 #[derive(Encode, Decode)]

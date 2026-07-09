@@ -29,8 +29,10 @@ pub struct PluginInstanceWithId {
 }
 
 pub enum ChainOperationError {
+  NotFound,
   InvalidArguments,
   BufferError,
+  QueueError,
 }
 
 pub enum AudioCommand {
@@ -39,10 +41,4 @@ pub enum AudioCommand {
   ChangePluginPosition(u32, usize),
   RemovePlugin(u32),
   RemoveAll,
-}
-
-pub enum PluginActionError {
-  NotFound,
-  InstantionFailed,
-  QueueError,
 }

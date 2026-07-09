@@ -3,7 +3,7 @@ use shared::{
   commands::{
     ParamChangedPayload, PushCommand, RequestCommand,
     RequestCommandResponse::{self, ConnectedPorts, CurrentConnectionsState},
-    StateChangeEvent,
+    RequestError, StateChangeEvent,
   },
   data::{AudioConnections, AvailableAudioDevices},
   utils::socket::{get_sockets_endpoints, prepare_bind_endpoint},
@@ -18,7 +18,10 @@ use zeromq::{PubSocket, PullSocket, RepSocket, Socket, SocketRecv, SocketSend};
 use crate::{
   decode_msg,
   jack_client::client::AudioEngine,
-  message_handler::message_handler_controller::MessageHandlerController,
+  message_handler::{
+    message_handler_controller::MessageHandlerController,
+    utils::{chain_error_to_request_error, emit_and_respond},
+  },
   plugin_manager::manager::PluginManager,
   utils::ports::{PortType, extract_unique_ports},
 };
@@ -48,45 +51,50 @@ impl MessageHandler {
     request: RequestCommand,
     tx_pub: &Sender<StateChangeEvent>,
   ) {
-    let response: RequestCommandResponse;
-    match request {
+    let response: Result<RequestCommandResponse, RequestError> = match request {
       RequestCommand::GetAvailablePlugins(query) => {
         let plugins_vec = self.plugin_manager.get_plugins(query);
-        response = RequestCommandResponse::AvailablePlugins(plugins_vec);
-        tx_pub.send(StateChangeEvent::PresetLoaded).await;
+        emit_and_respond(
+          tx_pub,
+          StateChangeEvent::PresetLoaded,
+          RequestCommandResponse::AvailablePlugins(plugins_vec),
+        )
+        .await
       }
       RequestCommand::LoadPreset(preset) => match self.plugin_manager.load_preset(preset) {
-        Ok(chain_items) => response = RequestCommandResponse::CurrentState(chain_items),
-        Err(_e) => response = RequestCommandResponse::Error("failed to load preset".to_string()),
+        Ok(chain_items) => Ok(RequestCommandResponse::CurrentState(chain_items)),
+        Err(e) => Err(chain_error_to_request_error(e)),
       },
-      RequestCommand::GetCurrentState => {
-        let current_state = self.plugin_manager.get_current_chain_state();
-        response = RequestCommandResponse::CurrentState(current_state);
-      }
+      RequestCommand::GetCurrentState => Ok(RequestCommandResponse::CurrentState(
+        self.plugin_manager.get_current_chain_state(),
+      )),
       RequestCommand::UnloadPlugin(id) => match self.plugin_manager.unload_plugin(id) {
-        Ok(_) => response = RequestCommandResponse::UnloadPlugin,
-        Err(_e) => response = RequestCommandResponse::Error("failed to unload plugin".to_string()),
+        Ok(_) => Ok(RequestCommandResponse::UnloadPlugin),
+        Err(e) => Err(chain_error_to_request_error(e)),
       },
-      RequestCommand::ChangePluginPosition(plugin_id, new_position) => {
-        self
-          .plugin_manager
-          .change_plugin_position(plugin_id, new_position);
-        response = RequestCommandResponse::ChangePluginPosition;
-      }
-      RequestCommand::RemoveAll => {
-        self.plugin_manager.clear();
-        response = RequestCommandResponse::RemoveAll
-      }
+      RequestCommand::ChangePluginPosition(plugin_id, new_position) => match self
+        .plugin_manager
+        .change_plugin_position(plugin_id, new_position)
+      {
+        Ok(_) => Ok(RequestCommandResponse::ChangePluginPosition),
+        Err(e) => Err(chain_error_to_request_error(e)),
+      },
+      RequestCommand::RemoveAll => match self.plugin_manager.clear() {
+        Ok(_) => Ok(RequestCommandResponse::RemoveAll),
+        Err(e) => Err(chain_error_to_request_error(e)),
+      },
       RequestCommand::LoadPlugin(plugin_uri, position) => {
         let load_result = self.plugin_manager.load_plugin(position, &plugin_uri);
         match load_result {
           Ok(chain_item) => {
-            response = RequestCommandResponse::LoadedPlugin(chain_item);
-            tx_pub.send(StateChangeEvent::PluginLoaded).await;
+            emit_and_respond(
+              tx_pub,
+              StateChangeEvent::PluginLoaded,
+              RequestCommandResponse::LoadedPlugin(chain_item),
+            )
+            .await
           }
-          Err(_e) => {
-            response = RequestCommandResponse::Error("failed to load plugin".to_string());
-          }
+          Err(e) => Err(chain_error_to_request_error(e)),
         }
       }
       RequestCommand::GetAvailableAudioDevices => {
@@ -94,10 +102,12 @@ impl MessageHandler {
          * consumed by output devices that have audio **input** ports
          */
         let (inputs, outputs) = self.audio_engine.get_audio_devices();
-        response = RequestCommandResponse::AvaialbleAudioDevices(AvailableAudioDevices {
-          input_ports: outputs,
-          output_devices: inputs,
-        })
+        Ok(RequestCommandResponse::AvaialbleAudioDevices(
+          AvailableAudioDevices {
+            input_ports: outputs,
+            output_devices: inputs,
+          },
+        ))
       }
       RequestCommand::GetCurrentConnectionsState => {
         let state = self
@@ -115,15 +125,18 @@ impl MessageHandler {
             PortType::Input,
           ),
         };
-        response = CurrentConnectionsState(device_oriented_state)
+        Ok(CurrentConnectionsState(device_oriented_state))
       }
       RequestCommand::ConnectPorts(audio_device_input, audio_device_outputs) => {
-        self
+        match self
           .audio_engine
-          .set_audio_connections(audio_device_input, audio_device_outputs);
-        response = ConnectedPorts
+          .set_audio_connections(audio_device_input, audio_device_outputs)
+        {
+          Ok(_) => Ok(ConnectedPorts),
+          Err(_) => Err(RequestError::InternalError),
+        }
       }
-    }
+    };
 
     let encoded = encode_to_vec(response, config::standard()).unwrap();
     socket.send(encoded.into()).await.ok();
@@ -140,7 +153,7 @@ impl MessageHandler {
           port_id,
           new_value,
         };
-        tx_pub
+        let _ = tx_pub
           .send(StateChangeEvent::ParamChanged(event_payload))
           .await;
       }

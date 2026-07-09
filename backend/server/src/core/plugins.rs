@@ -1,16 +1,17 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{Json, extract::State};
 use axum_extra::extract::Query;
 use shared::data::{PluginFilters, PluginQuery};
 
 use crate::{
   context::AppContext,
+  engine_client::commands::{GetAvailablePlugins, RequestCommandError},
   models::dto::plugins::{ListPluginsQuery, ListPluginsResponse},
 };
 
 pub async fn list_plugins(
   State(ctx): State<AppContext>,
   Query(query): Query<ListPluginsQuery>,
-) -> Result<Json<ListPluginsResponse>, StatusCode> {
+) -> Result<Json<ListPluginsResponse>, RequestCommandError> {
   let query = PluginQuery {
     filters: Some(PluginFilters {
       name: query.name,
@@ -19,13 +20,11 @@ pub async fn list_plugins(
     }),
     ..Default::default()
   };
+  let plugins = ctx
+    .engine_client
+    .send_request(GetAvailablePlugins { query })
+    .await?;
 
-  match ctx.engine_client.get_available_plugins(query).await {
-    Ok(plugins) => {
-      let _plugins_len = plugins.len();
-      let plugins_response = ListPluginsResponse { plugins };
-      Ok(Json(plugins_response))
-    }
-    Err(_e) => Err(StatusCode::INTERNAL_SERVER_ERROR),
-  }
+  let plugins_response = ListPluginsResponse { plugins };
+  Ok(Json(plugins_response))
 }

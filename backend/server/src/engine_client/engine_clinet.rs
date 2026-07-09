@@ -2,16 +2,16 @@ use std::sync::Arc;
 
 use bincode::{config, decode_from_slice, encode_to_vec};
 use shared::{
-  commands::{PushCommand, RequestCommand, RequestCommandError, RequestCommandResponse},
-  data::{
-    AudioConnections, AvailableAudioDevices, ChainItem, PluginMetadata, PluginQuery, PresetItem,
-  },
+  commands::{PushCommand, RequestCommand, RequestCommandResponse, RequestError},
   utils::socket::{get_sockets_endpoints, prepare_connect_endpoint},
 };
 use tokio::sync::Mutex;
 use zeromq::{PushSocket, ReqSocket, Socket, SocketRecv, SocketSend};
 
-use crate::engine_client::engine_subscriber::EngineSubscriber;
+use crate::engine_client::{
+  commands::{EngineCommand, RequestCommandError},
+  engine_subscriber::EngineSubscriber,
+};
 
 #[derive(Clone)]
 pub struct EngineClient {
@@ -58,7 +58,7 @@ impl EngineClient {
   async fn send_raw(
     &self,
     command: RequestCommand,
-  ) -> Result<RequestCommandResponse, RequestCommandError> {
+  ) -> Result<Result<RequestCommandResponse, RequestError>, RequestCommandError> {
     let config = config::standard();
     let mut socket = self.req_socket.lock().await;
 
@@ -84,81 +84,18 @@ impl EngineClient {
     Ok(decoded_response)
   }
 
-  pub async fn get_available_plugins(
-    &self,
-    query: PluginQuery,
-  ) -> Result<Vec<PluginMetadata>, RequestCommandError> {
-    let response = self
-      .send_raw(RequestCommand::GetAvailablePlugins(query))
-      .await?;
-    let RequestCommandResponse::AvailablePlugins(data) = response else {
-      return Err(RequestCommandError::DataFormatError);
-    };
+  pub async fn send_request<R>(&self, request: R) -> Result<R::Response, RequestCommandError>
+  where
+    R: EngineCommand,
+  {
+    let cmd = request.to_command();
 
-    Ok(data)
-  }
+    let success_response = self
+      .send_raw(cmd)
+      .await?
+      .map_err(RequestCommandError::EngineError)?;
 
-  pub async fn load_plugin(
-    &self,
-    uri: String,
-    position: usize,
-  ) -> Result<ChainItem, RequestCommandError> {
-    let response = self
-      .send_raw(RequestCommand::LoadPlugin(uri, position))
-      .await?;
-
-    let RequestCommandResponse::LoadedPlugin(data) = response else {
-      return Err(RequestCommandError::DataFormatError);
-    };
-
-    Ok(data)
-  }
-
-  pub async fn clear(&self) -> Result<(), RequestCommandError> {
-    self.send_raw(RequestCommand::RemoveAll).await?;
-    Ok(())
-  }
-
-  pub async fn unload_plugin(&self, plugin_id: u32) -> Result<(), RequestCommandError> {
-    self
-      .send_raw(RequestCommand::UnloadPlugin(plugin_id))
-      .await?;
-    Ok(())
-  }
-
-  pub async fn change_plugin_position(
-    &self,
-    plugin_id: u32,
-    new_position: usize,
-  ) -> Result<(), RequestCommandError> {
-    self
-      .send_raw(RequestCommand::ChangePluginPosition(
-        plugin_id,
-        new_position,
-      ))
-      .await?;
-    Ok(())
-  }
-
-  pub async fn get_current_state(&self) -> Result<Vec<ChainItem>, RequestCommandError> {
-    let response = self.send_raw(RequestCommand::GetCurrentState).await?;
-    let RequestCommandResponse::CurrentState(data) = response else {
-      return Err(RequestCommandError::DataFormatError);
-    };
-
-    Ok(data)
-  }
-
-  pub async fn load_preset(
-    &self,
-    preset: Vec<PresetItem>,
-  ) -> Result<Vec<ChainItem>, RequestCommandError> {
-    let response = self.send_raw(RequestCommand::LoadPreset(preset)).await?;
-    let RequestCommandResponse::CurrentState(data) = response else {
-      return Err(RequestCommandError::DataFormatError);
-    };
-
-    Ok(data)
+    R::extract_response(success_response).ok_or(RequestCommandError::DataFormatError)
   }
 
   pub async fn set_plugin_param(&self, plugin_id: u32, port_id: u32, new_value: f32) {
@@ -166,44 +103,5 @@ impl EngineClient {
     let req_bytes = encode_to_vec(command, config::standard()).unwrap();
     let mut socket = self.push_socket.lock().await;
     socket.send(req_bytes.into()).await;
-  }
-
-  pub async fn get_audio_deivces(&self) -> Result<AvailableAudioDevices, RequestCommandError> {
-    let response = self
-      .send_raw(RequestCommand::GetAvailableAudioDevices)
-      .await?;
-    let RequestCommandResponse::AvaialbleAudioDevices(data) = response else {
-      return Err(RequestCommandError::DataFormatError);
-    };
-
-    Ok(data)
-  }
-
-  pub async fn get_current_connections_state(
-    &self,
-  ) -> Result<AudioConnections, RequestCommandError> {
-    let response = self
-      .send_raw(RequestCommand::GetCurrentConnectionsState)
-      .await?;
-    let RequestCommandResponse::CurrentConnectionsState(data) = response else {
-      return Err(RequestCommandError::DataFormatError);
-    };
-
-    Ok(data)
-  }
-
-  pub async fn connect_ports(
-    &self,
-    input_device_port: String,
-    output_devices: Vec<String>,
-  ) -> Result<(), RequestCommandError> {
-    self
-      .send_raw(RequestCommand::ConnectPorts(
-        input_device_port,
-        output_devices,
-      ))
-      .await?;
-
-    Ok(())
   }
 }
