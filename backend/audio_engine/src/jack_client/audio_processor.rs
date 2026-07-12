@@ -13,16 +13,19 @@ const INITIAL_ACTIVE_PLUGINS_CAPACITY: usize = 128;
 
 pub struct AudioProcessor {
   audio_in: Port<AudioIn>,
-  audio_out: Port<AudioOut>,
+  audio_out_l: Port<AudioOut>,
+  audio_out_r: Port<AudioOut>,
   active_plugins: Vec<PluginInstanceWithId>,
   audio_commands_consumer: HeapCons<AudioCommand>,
-  scratch_buf: Vec<f32>,
+  scratch_buf_l: Vec<f32>,
+  scratch_buf_r: Vec<f32>,
 }
 
 impl AudioProcessor {
   pub fn new(
     audio_in: Port<AudioIn>,
-    audio_out: Port<AudioOut>,
+    audio_out_l: Port<AudioOut>,
+    audio_out_r: Port<AudioOut>,
     audio_commands_consumer: HeapCons<AudioCommand>,
     buffer_size: usize,
   ) -> Self {
@@ -31,10 +34,12 @@ impl AudioProcessor {
 
     Self {
       audio_in,
-      audio_out,
+      audio_out_l,
+      audio_out_r,
       active_plugins,
       audio_commands_consumer,
-      scratch_buf: vec![0.0; buffer_size],
+      scratch_buf_l: vec![0.0; buffer_size],
+      scratch_buf_r: vec![0.0; buffer_size],
     }
   }
 
@@ -73,32 +78,41 @@ impl ProcessHandler for AudioProcessor {
     self.handle_commands();
 
     let in_buf = self.audio_in.as_slice(process_scope);
-    let out_buf = self.audio_out.as_mut_slice(process_scope);
+    let out_l = self.audio_out_l.as_mut_slice(process_scope);
+    let out_r = self.audio_out_r.as_mut_slice(process_scope);
     let n_frames = in_buf.len();
 
     if self.active_plugins.is_empty() {
-      out_buf.clone_from_slice(in_buf);
+      out_l.clone_from_slice(in_buf);
+      out_r.clone_from_slice(in_buf);
       return Control::Continue;
     }
 
-    let scratch = &mut self.scratch_buf[..n_frames];
+    let scratch_l = &mut self.scratch_buf_l[..n_frames];
+    let scratch_r = &mut self.scratch_buf_r[..n_frames];
 
-    out_buf.clone_from_slice(in_buf);
+    out_l.clone_from_slice(in_buf);
+    out_r.clone_from_slice(in_buf);
 
     let mut write_to_scratch = true;
 
     for active_plugin in &mut self.active_plugins {
       if write_to_scratch {
-        active_plugin.instance.process(&*out_buf, scratch, n_frames);
+        active_plugin
+          .instance
+          .process(&*out_l, &*out_r, scratch_l, scratch_r, n_frames);
       } else {
-        active_plugin.instance.process(&*scratch, out_buf, n_frames);
+        active_plugin
+          .instance
+          .process(&*scratch_l, &*scratch_r, out_l, out_r, n_frames);
       }
 
       write_to_scratch = !write_to_scratch;
     }
 
     if !write_to_scratch {
-      out_buf.clone_from_slice(scratch);
+      out_l.clone_from_slice(scratch_l);
+      out_r.clone_from_slice(scratch_r);
     }
 
     Control::Continue

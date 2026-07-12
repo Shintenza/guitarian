@@ -93,7 +93,7 @@ impl PluginRepository for LV2PluginRepository {
     let seq_in = LV2AtomSequence::new(&self.features, 1024);
     let seq_out = LV2AtomSequence::new(&self.features, 1024);
     let atom_seq_ports = AtomSequencePorts { seq_in, seq_out };
-    let plugin_instance = LV2PluginInstance::new(instance, atom_seq_ports);
+    let plugin_instance = LV2PluginInstance::new(instance, *plugin.port_counts(), atom_seq_ports);
 
     Some(plugin_instance)
   }

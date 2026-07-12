@@ -5,11 +5,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ConnectionsState {
   pub connected_to_input: Option<String>,
-  pub connected_to_output: HashSet<String>,
+  pub connected_to_output_l: HashSet<String>,
+  pub connected_to_output_r: HashSet<String>,
 }
 
 #[derive(Clone)]
 pub struct EnginePortsNames {
   pub input: String,
-  pub output: String,
+  pub output_l: String,
+  pub output_r: String,
 }

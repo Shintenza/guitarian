@@ -52,11 +52,17 @@ impl jack::NotificationHandler for NotificationHandler {
           } else {
             locked_state.connected_to_input = None
           }
-        } else if our_name == self.port_names.output {
+        } else if our_name == self.port_names.output_l {
           if are_connected {
-            locked_state.connected_to_output.insert(other_name);
+            locked_state.connected_to_output_l.insert(other_name);
           } else {
-            locked_state.connected_to_output.remove(&other_name);
+            locked_state.connected_to_output_l.remove(&other_name);
+          }
+        } else if our_name == self.port_names.output_r {
+          if are_connected {
+            locked_state.connected_to_output_r.insert(other_name);
+          } else {
+            locked_state.connected_to_output_r.remove(&other_name);
           }
         }
       };

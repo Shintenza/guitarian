@@ -114,11 +114,12 @@ impl MessageHandler {
           .audio_engine
           .get_current_connections_state()
           .unwrap_or_default();
+
         let device_oriented_state = AudioConnections {
           input: state.connected_to_input,
           outputs: extract_unique_ports(
             state
-              .connected_to_output
+              .connected_to_output_l
               .iter()
               .cloned()
               .collect::<Vec<_>>(),

@@ -7,7 +7,10 @@ use std::sync::{Arc, Mutex};
 use crate::jack_client::audio_processor::AudioProcessor;
 use crate::jack_client::notification_handler::NotificationHandler;
 use crate::jack_client::types::{ConnectionsState, EnginePortsNames};
-use crate::jack_client::utils::{connect_ports, load_saved_connections_state};
+use crate::jack_client::utils::{
+  apply_port_changes, calculate_port_diff, handle_initial_ports_connections,
+  load_saved_connections_state,
+};
 use crate::plugin_manager::types::AudioCommand;
 use crate::utils::ports::{PortType, extract_unique_ports};
 
@@ -19,7 +22,8 @@ pub struct AudioEngine {
 
 const DEFAULT_NAME_SERVER_NAME: &str = "guitarian";
 const INPUT_NAME: &str = "in";
-const OUTPUT_NAME: &str = "out";
+const OUTPUT_NAME_LEFT: &str = "out_L";
+const OUTPUT_NAME_RIGHT: &str = "out_R";
 
 impl AudioEngine {
   pub fn new(consumer: HeapCons<AudioCommand>) -> Self {
@@ -30,30 +34,31 @@ impl AudioEngine {
     let audio_in = client
       .register_port(INPUT_NAME, AudioIn::default())
       .unwrap();
-    let audio_out = client
-      .register_port(OUTPUT_NAME, AudioOut::default())
+    let audio_out_l = client
+      .register_port(OUTPUT_NAME_LEFT, AudioOut::default())
+      .unwrap();
+
+    let audio_out_r = client
+      .register_port(OUTPUT_NAME_RIGHT, AudioOut::default())
       .unwrap();
 
     let ports_names = EnginePortsNames {
       input: audio_in.name().unwrap(),
-      output: audio_out.name().unwrap(),
+      output_l: audio_out_l.name().unwrap(),
+      output_r: audio_out_r.name().unwrap(),
     };
 
-    let processor =
-      AudioProcessor::new(audio_in, audio_out, consumer, client.buffer_size() as usize);
+    let processor = AudioProcessor::new(
+      audio_in,
+      audio_out_l,
+      audio_out_r,
+      consumer,
+      client.buffer_size() as usize,
+    );
 
     let state = load_saved_connections_state().unwrap_or_default();
 
-    let _ = connect_ports(
-      &client,
-      &ports_names,
-      &state.connected_to_input.iter().cloned().collect::<Vec<_>>(),
-      &state
-        .connected_to_output
-        .iter()
-        .cloned()
-        .collect::<Vec<_>>(),
-    );
+    let _ = handle_initial_ports_connections(&client, &ports_names, &state);
     let guarded_state = Arc::new(Mutex::new(state));
 
     let notification_handler = NotificationHandler::new(ports_names.clone(), guarded_state.clone());
@@ -85,9 +90,12 @@ impl AudioEngine {
       }
     }
 
-    let pattern: Option<String> = name.map(|n| match port_type {
-      PortType::Output => n.clone(),
-      PortType::Input => format!("^{n}:"),
+    let pattern: Option<String> = name.map(|n| {
+      let safe_n = n.replace("(", r"\(").replace(")", r"\)");
+      match port_type {
+        PortType::Output => safe_n.clone(),
+        PortType::Input => format!("^{safe_n}:"),
+      }
     });
 
     self
@@ -114,42 +122,42 @@ impl AudioEngine {
     audio_source_port: String,
     destination_devices: Vec<String>,
   ) -> Result<()> {
-    let client_in_port = self
-      .async_client
-      .as_client()
-      .port_by_name(&self.ports_names.input)
-      .unwrap();
+    let client = self.async_client.as_client();
 
-    let destination_devices_ports = destination_devices
-      .iter()
-      .flat_map(|item| self.get_ports(PortType::Input, Some(item)))
-      .collect::<Vec<String>>();
+    let client_in_port = client.port_by_name(&self.ports_names.input).unwrap();
 
-    let needs_input_change: bool;
-    let to_be_added: Vec<String>;
-    let to_be_removed: Vec<String>;
+    let mut desired_out_l: Vec<String> = Vec::new();
+    let mut desired_out_r: Vec<String> = Vec::new();
 
-    {
-      let connections_state = self.connections_state.lock().unwrap();
+    for device in &destination_devices {
+      let device_ports = self.get_ports(PortType::Input, Some(device));
 
-      needs_input_change = match &connections_state.connected_to_input {
+      if device_ports.is_empty() {
+        continue;
+      }
+
+      if device_ports.len() == 1 {
+        desired_out_l.push(device_ports[0].clone());
+        desired_out_r.push(device_ports[0].clone());
+      } else {
+        desired_out_l.push(device_ports[0].clone());
+        desired_out_r.push(device_ports[1].clone());
+      }
+    }
+
+    let (needs_input_change, add_l, rem_l, add_r, rem_r) = {
+      let state = self.connections_state.lock().unwrap();
+
+      let needs_input = match &state.connected_to_input {
         Some(current) => *current != audio_source_port,
         None => true,
       };
 
-      to_be_added = destination_devices_ports
-        .iter()
-        .filter(|i| !connections_state.connected_to_output.contains(*i))
-        .cloned()
-        .collect();
+      let (a_l, r_l) = calculate_port_diff(&state.connected_to_output_l, &desired_out_l);
+      let (a_r, r_r) = calculate_port_diff(&state.connected_to_output_r, &desired_out_r);
 
-      to_be_removed = connections_state
-        .connected_to_output
-        .iter()
-        .filter(|i| !destination_devices_ports.contains(i))
-        .cloned()
-        .collect();
-    }
+      (needs_input, a_l, r_l, a_r, r_r)
+    };
 
     if needs_input_change {
       self.async_client.as_client().disconnect(&client_in_port)?;
@@ -159,20 +167,8 @@ impl AudioEngine {
         .connect_ports_by_name(&audio_source_port, &self.ports_names.input)?;
     }
 
-    for port in to_be_added {
-      self
-        .async_client
-        .as_client()
-        .connect_ports_by_name(&self.ports_names.output, &port)?;
-    }
-
-    for port in to_be_removed {
-      self
-        .async_client
-        .as_client()
-        .disconnect_ports_by_name(&self.ports_names.output, &port)?;
-    }
-
+    apply_port_changes(client, &self.ports_names.output_l, &add_l, &rem_l)?;
+    apply_port_changes(client, &self.ports_names.output_r, &add_r, &rem_r)?;
     Ok(())
   }
 }
