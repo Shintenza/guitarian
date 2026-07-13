@@ -77,7 +77,7 @@ define_command!(
 );
 
 define_command!(
-    LoadPreset { preset: Vec<PresetItem> }
+    LoadPreset { id: u32, preset: Vec<PresetItem> }
     => req: LoadPreset
     => res: CurrentState(Vec<ChainItem>)
 );

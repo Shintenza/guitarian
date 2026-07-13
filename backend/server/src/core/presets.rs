@@ -47,7 +47,10 @@ pub async fn load_preset(
   let preset: Vec<PresetItem> =
     serde_json::from_value(db_preset.data).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-  let loaded_preset = ctx.engine_client.send_request(LoadPreset { preset }).await;
+  let loaded_preset = ctx
+    .engine_client
+    .send_request(LoadPreset { id, preset })
+    .await;
 
   match loaded_preset {
     Ok(chain) => {

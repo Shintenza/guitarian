@@ -1,8 +1,5 @@
 use ringbuf::{HeapProd, traits::Producer};
-use std::{
-  io::Chain,
-  sync::{Arc, atomic::Ordering},
-};
+use std::sync::{Arc, atomic::Ordering};
 
 use crate::{
   plugin_manager::{

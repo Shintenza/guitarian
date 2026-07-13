@@ -6,12 +6,10 @@ use axum::{
   response::Response,
 };
 use futures::{SinkExt, stream::StreamExt};
-use shared::commands::StateChangeEvent::{ParamChanged, PluginLoaded, PresetLoaded};
 
 use crate::{
-  context::AppContext,
-  engine_client::engine_clinet::EngineClient,
-  models::dto::plugins::{WebSocketClientMessage, WebSocketNotificationMessage},
+  context::AppContext, engine_client::engine_clinet::EngineClient,
+  models::dto::plugins::WebSocketClientMessage,
 };
 
 pub async fn handle_ws_request(ws: WebSocketUpgrade, State(ctx): State<AppContext>) -> Response {
@@ -27,24 +25,9 @@ pub async fn ws_hanlder(socket: WebSocket, ctx: AppContext) {
     subscriber.subscribe().await;
 
     while let Some(event) = subscriber.recv().await {
-      let message: String;
-      match event {
-        PresetLoaded => {
-          message = "loaded a preset".to_string();
-        }
-        PluginLoaded => {
-          message = "loaded plugin".to_string();
-        }
-        ParamChanged(payload) => {
-          message = format!(
-            "param changed: plugin_id: {}; port_id: {}; value: {}",
-            payload.plugin_id, payload.port_id, payload.new_value
-          );
-        }
+      if let Ok(json_string) = serde_json::to_string(&event) {
+        ws_tx.send(Message::Text(json_string.into())).await.ok();
       }
-      let response = WebSocketNotificationMessage { message };
-      let json_string = serde_json::to_string(&response).unwrap();
-      ws_tx.send(Message::Text(json_string.into())).await;
     }
   });
 

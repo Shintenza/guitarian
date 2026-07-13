@@ -1,4 +1,5 @@
 use bincode::{Decode, Encode};
+use serde::Serialize;
 
 use crate::data::{
   AudioConnections, AvailableAudioDevices, ChainItem, PluginMetadata, PluginQuery, PresetItem,
@@ -19,7 +20,7 @@ pub enum RequestCommand {
   GetAvailablePlugins(PluginQuery),
   GetCurrentState,
   LoadPlugin(String, usize),
-  LoadPreset(Vec<PresetItem>),
+  LoadPreset(u32, Vec<PresetItem>),
   ChangePluginPosition(u32, usize),
   UnloadPlugin(u32),
   RemoveAll,
@@ -44,16 +45,28 @@ pub enum RequestCommandResponse {
   Error(String),
 }
 
-#[derive(Encode, Decode)]
-pub struct ParamChangedPayload {
-  pub plugin_id: u32,
-  pub port_id: u32,
-  pub new_value: f32,
-}
-
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, Serialize)]
+#[serde(tag = "type", content = "payload")]
 pub enum StateChangeEvent {
-  PluginLoaded,
-  PresetLoaded,
-  ParamChanged(ParamChangedPayload),
+  Cleared,
+  PluginLoaded {
+    plugin_uri: String,
+    position: usize,
+  },
+  PluginPositionChanged {
+    plugin_id: u32,
+    new_position: usize,
+  },
+  PluginUnloaded {
+    plugin_id: u32,
+  },
+  PresetLoaded {
+    preset_id: u32,
+  },
+  ConnectionsChanged,
+  ParamChanged {
+    plugin_id: u32,
+    port_id: u32,
+    new_value: f32,
+  },
 }

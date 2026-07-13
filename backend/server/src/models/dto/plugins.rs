@@ -16,11 +16,6 @@ pub enum WebSocketClientMessage {
   },
 }
 
-#[derive(Serialize)]
-pub struct WebSocketNotificationMessage {
-  pub message: String,
-}
-
 #[derive(Deserialize)]
 pub struct ListPluginsQuery {
   pub name: Option<String>,

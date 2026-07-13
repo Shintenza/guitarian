@@ -24,14 +24,22 @@ pub fn chain_error_to_request_error(plugin_error: ChainOperationError) -> Reques
   }
 }
 
-pub async fn emit_and_respond(
+pub async fn process_action<T, E, F, ErrMapper>(
   tx_pub: &Sender<StateChangeEvent>,
-  event: StateChangeEvent,
-  response: RequestCommandResponse,
-) -> Result<RequestCommandResponse, RequestError> {
-  tx_pub
-    .send(event)
-    .await
-    .map(|_| response)
-    .map_err(|_| RequestError::InternalError)
+  result: Result<T, E>,
+  map_response: F,
+  map_error: ErrMapper,
+  event_to_emit: Option<StateChangeEvent>,
+) -> Result<RequestCommandResponse, RequestError>
+where
+  F: FnOnce(T) -> RequestCommandResponse,
+  ErrMapper: FnOnce(E) -> RequestError,
+{
+  let data = result.map_err(map_error)?;
+
+  if let Some(ev) = event_to_emit {
+    tx_pub.send(ev).await.ok();
+  }
+
+  Ok(map_response(data))
 }

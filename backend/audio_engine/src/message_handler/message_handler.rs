@@ -1,9 +1,10 @@
 use bincode::{config, encode_to_vec};
 use shared::{
   commands::{
-    ParamChangedPayload, PushCommand, RequestCommand,
-    RequestCommandResponse::{self, ConnectedPorts, CurrentConnectionsState},
-    RequestError, StateChangeEvent,
+    PushCommand, RequestCommand,
+    RequestCommandResponse::{self, CurrentConnectionsState},
+    RequestError,
+    StateChangeEvent::{self},
   },
   data::{AudioConnections, AvailableAudioDevices},
   utils::socket::{get_sockets_endpoints, prepare_bind_endpoint},
@@ -20,7 +21,7 @@ use crate::{
   jack_client::client::AudioEngine,
   message_handler::{
     message_handler_controller::MessageHandlerController,
-    utils::{chain_error_to_request_error, emit_and_respond},
+    utils::{chain_error_to_request_error, process_action},
   },
   plugin_manager::manager::PluginManager,
   utils::ports::{PortType, extract_unique_ports},
@@ -52,51 +53,12 @@ impl MessageHandler {
     tx_pub: &Sender<StateChangeEvent>,
   ) {
     let response: Result<RequestCommandResponse, RequestError> = match request {
-      RequestCommand::GetAvailablePlugins(query) => {
-        let plugins_vec = self.plugin_manager.get_plugins(query);
-        emit_and_respond(
-          tx_pub,
-          StateChangeEvent::PresetLoaded,
-          RequestCommandResponse::AvailablePlugins(plugins_vec),
-        )
-        .await
-      }
-      RequestCommand::LoadPreset(preset) => match self.plugin_manager.load_preset(preset) {
-        Ok(chain_items) => Ok(RequestCommandResponse::CurrentState(chain_items)),
-        Err(e) => Err(chain_error_to_request_error(e)),
-      },
       RequestCommand::GetCurrentState => Ok(RequestCommandResponse::CurrentState(
         self.plugin_manager.get_current_chain_state(),
       )),
-      RequestCommand::UnloadPlugin(id) => match self.plugin_manager.unload_plugin(id) {
-        Ok(_) => Ok(RequestCommandResponse::UnloadPlugin),
-        Err(e) => Err(chain_error_to_request_error(e)),
-      },
-      RequestCommand::ChangePluginPosition(plugin_id, new_position) => match self
-        .plugin_manager
-        .change_plugin_position(plugin_id, new_position)
-      {
-        Ok(_) => Ok(RequestCommandResponse::ChangePluginPosition),
-        Err(e) => Err(chain_error_to_request_error(e)),
-      },
-      RequestCommand::RemoveAll => match self.plugin_manager.clear() {
-        Ok(_) => Ok(RequestCommandResponse::RemoveAll),
-        Err(e) => Err(chain_error_to_request_error(e)),
-      },
-      RequestCommand::LoadPlugin(plugin_uri, position) => {
-        let load_result = self.plugin_manager.load_plugin(position, &plugin_uri);
-        match load_result {
-          Ok(chain_item) => {
-            emit_and_respond(
-              tx_pub,
-              StateChangeEvent::PluginLoaded,
-              RequestCommandResponse::LoadedPlugin(chain_item),
-            )
-            .await
-          }
-          Err(e) => Err(chain_error_to_request_error(e)),
-        }
-      }
+      RequestCommand::GetAvailablePlugins(query) => Ok(RequestCommandResponse::AvailablePlugins(
+        self.plugin_manager.get_plugins(query),
+      )),
       RequestCommand::GetAvailableAudioDevices => {
         /*this is a perspective of JACK, meaning physical inputs are **outputting** signal that can be
          * consumed by output devices that have audio **input** ports
@@ -128,14 +90,75 @@ impl MessageHandler {
         };
         Ok(CurrentConnectionsState(device_oriented_state))
       }
+      RequestCommand::LoadPreset(id, preset) => {
+        process_action(
+          tx_pub,
+          self.plugin_manager.load_preset(preset),
+          RequestCommandResponse::CurrentState,
+          chain_error_to_request_error,
+          Some(StateChangeEvent::PresetLoaded { preset_id: id }),
+        )
+        .await
+      }
+      RequestCommand::UnloadPlugin(id) => {
+        process_action(
+          tx_pub,
+          self.plugin_manager.unload_plugin(id),
+          |_| RequestCommandResponse::UnloadPlugin,
+          chain_error_to_request_error,
+          Some(StateChangeEvent::PluginUnloaded { plugin_id: id }),
+        )
+        .await
+      }
+      RequestCommand::ChangePluginPosition(plugin_id, new_position) => {
+        process_action(
+          tx_pub,
+          self
+            .plugin_manager
+            .change_plugin_position(plugin_id, new_position),
+          |_| RequestCommandResponse::ChangePluginPosition,
+          chain_error_to_request_error,
+          Some(StateChangeEvent::PluginPositionChanged {
+            plugin_id,
+            new_position,
+          }),
+        )
+        .await
+      }
+      RequestCommand::RemoveAll => {
+        process_action(
+          tx_pub,
+          self.plugin_manager.clear(),
+          |_| RequestCommandResponse::RemoveAll,
+          chain_error_to_request_error,
+          Some(StateChangeEvent::Cleared),
+        )
+        .await
+      }
+      RequestCommand::LoadPlugin(plugin_uri, position) => {
+        process_action(
+          tx_pub,
+          self.plugin_manager.load_plugin(position, &plugin_uri),
+          RequestCommandResponse::LoadedPlugin,
+          chain_error_to_request_error,
+          Some(StateChangeEvent::PluginLoaded {
+            plugin_uri,
+            position,
+          }),
+        )
+        .await
+      }
       RequestCommand::ConnectPorts(audio_device_input, audio_device_outputs) => {
-        match self
-          .audio_engine
-          .set_audio_connections(audio_device_input, audio_device_outputs)
-        {
-          Ok(_) => Ok(ConnectedPorts),
-          Err(_) => Err(RequestError::InternalError),
-        }
+        process_action(
+          tx_pub,
+          self
+            .audio_engine
+            .set_audio_connections(audio_device_input, audio_device_outputs),
+          |_| RequestCommandResponse::ConnectedPorts,
+          |_| RequestError::InternalError,
+          Some(StateChangeEvent::ConnectionsChanged),
+        )
+        .await
       }
     };
 
@@ -149,13 +172,12 @@ impl MessageHandler {
         self
           .plugin_manager
           .set_plugin_port_value(plugin_id, port_id, new_value);
-        let event_payload = ParamChangedPayload {
-          plugin_id,
-          port_id,
-          new_value,
-        };
         let _ = tx_pub
-          .send(StateChangeEvent::ParamChanged(event_payload))
+          .send(StateChangeEvent::ParamChanged {
+            plugin_id,
+            port_id,
+            new_value,
+          })
           .await;
       }
     }
