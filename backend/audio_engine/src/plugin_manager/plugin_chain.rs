@@ -125,9 +125,13 @@ impl PluginChain {
     let (i_config, i_id): (Vec<InstanceConfig>, Vec<PluginInstanceWithId>) = preset
       .into_iter()
       .enumerate()
-      .map(|(index, plugin)| {
+      .map(|(index, mut plugin)| {
+        let instance_config = PluginChain::get_plugin_instance_config(&plugin, index as u32);
+        plugin
+          .instance
+          .set_port_values_source(instance_config.state.clone());
         (
-          PluginChain::get_plugin_instance_config(&plugin, index as u32),
+          instance_config,
           PluginInstanceWithId {
             id: index as u32,
             instance: plugin.instance,

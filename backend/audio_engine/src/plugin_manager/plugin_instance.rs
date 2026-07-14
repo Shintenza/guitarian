@@ -69,6 +69,16 @@ impl PluginInstance for LV2PluginInstance {
         .run(n_frames, ports)
         .unwrap_or_else(|e| log::error!("plugin run error {}", e))
     }
+    match self.port_counts.audio_outputs {
+      0 => {
+        out_l.copy_from_slice(in_l);
+        out_r.copy_from_slice(in_r);
+      }
+      1 => {
+        out_r.copy_from_slice(out_l);
+      }
+      _ => {}
+    }
   }
   fn set_port_values_source(&mut self, port_values: Arc<Vec<PortConfig>>) {
     self.port_values = Some(port_values);
