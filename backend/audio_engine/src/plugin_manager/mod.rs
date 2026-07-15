@@ -1,3 +1,4 @@
+mod chain_saver;
 pub mod manager;
 mod plugin_chain;
 pub mod plugin_instance;

@@ -2,6 +2,7 @@ use std::{fs, path::PathBuf};
 
 const DB_LOCATION: &str = "db/db.sqlite";
 const CONNECTIONS_STATE: &str = "state/connections.json";
+const CHAIN_DUMP: &str = "state/chain.json";
 
 fn get_app_data_dir() -> PathBuf {
   let home_dir = std::env::var("HOME").unwrap_or_else(|_| "/root".to_owned());
@@ -32,4 +33,8 @@ pub fn get_connections_state_location() -> PathBuf {
 
 pub fn get_db_location() -> PathBuf {
   get_location(DB_LOCATION)
+}
+
+pub fn get_chain_dump_location() -> PathBuf {
+  get_location(CHAIN_DUMP)
 }

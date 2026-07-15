@@ -3,6 +3,7 @@ use std::sync::atomic::Ordering;
 use ringbuf::HeapProd;
 use shared::data::{ChainItem, ControlState, PluginMetadata, PluginQuery, PresetItem};
 
+use crate::plugin_manager::chain_saver::ChainSaver;
 use crate::plugin_manager::plugin_chain::PluginChain;
 use crate::plugin_manager::plugin_repository::{LV2PluginRepository, PluginRepository};
 use crate::plugin_manager::types::{
@@ -12,17 +13,26 @@ use crate::plugin_manager::types::{
 pub struct PluginManager {
   lv2_repository: LV2PluginRepository,
   plugin_chain: PluginChain,
+  chain_saver: ChainSaver,
 }
 
 impl PluginManager {
   pub fn new(sample_rate: u32, producer: HeapProd<AudioCommand>) -> Self {
     let lv2_repository = LV2PluginRepository::new(sample_rate);
     let plugin_chain = PluginChain::new(producer);
+    let chain_saver = ChainSaver::new();
 
-    PluginManager {
+    let mut manager = PluginManager {
       lv2_repository,
       plugin_chain,
+      chain_saver,
+    };
+
+    if let Some(dump) = ChainSaver::load_preset_from_disk() {
+      let _ = manager.load_preset(dump);
     }
+
+    manager
   }
 
   fn instance_config_to_chain_item(&self, instance_config: InstanceConfig) -> ChainItem {
@@ -51,8 +61,15 @@ impl PluginManager {
     plugins
   }
 
+  fn trigger_save(&self) {
+    let current_chain = self.plugin_chain.get_current_chain();
+    self.chain_saver.request_save(current_chain);
+  }
+
   pub fn clear(&mut self) -> Result<(), ChainOperationError> {
-    self.plugin_chain.clear()
+    self.plugin_chain.clear()?;
+    self.trigger_save();
+    Ok(())
   }
 
   pub fn change_plugin_position(
@@ -62,17 +79,21 @@ impl PluginManager {
   ) -> Result<(), ChainOperationError> {
     self
       .plugin_chain
-      .change_plugin_position(plugin_id, new_position)
+      .change_plugin_position(plugin_id, new_position)?;
+    self.trigger_save();
+    Ok(())
   }
 
   pub fn set_plugin_port_value(&self, plugin_id: u32, port_id: u32, new_value: f32) {
     self
       .plugin_chain
       .set_plugin_port_value(plugin_id, port_id, new_value);
+    self.trigger_save();
   }
 
   pub fn unload_plugin(&mut self, id: u32) -> Result<(), ChainOperationError> {
     self.plugin_chain.remove_plugin(id)?;
+    self.trigger_save();
     Ok(())
   }
 
@@ -87,6 +108,7 @@ impl PluginManager {
       .ok_or(ChainOperationError::NotFound)?;
 
     let result = self.plugin_chain.add_plugin(position, initialized_plugin);
+    self.trigger_save();
     Ok(self.instance_config_to_chain_item(result))
   }
 
@@ -126,6 +148,7 @@ impl PluginManager {
       .map(|item| self.instance_config_to_chain_item(item))
       .collect();
 
+    self.trigger_save();
     Ok(chain_items)
   }
 }
