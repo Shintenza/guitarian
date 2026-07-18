@@ -10,11 +10,14 @@ export { default as DropdownMenu } from "./form/uncontrolled/DropdownMenu";
 export { default as Input } from "./form/uncontrolled/Input";
 export { default as Slider } from "./form/uncontrolled/Slider";
 export { default as IconButton } from "./IconButton";
+export { default as KeyboardHandler } from "./KeyboardHandler";
 export { default as Popup } from "./Popup";
 export { default as PresetListItem } from "./PresetListItem";
 export { default as SettingsOption } from "./SettingsOption";
 export { default as Spinner } from "./Spinner";
+export { default as StatusPill } from "./StatusPill";
 export { default as Switch } from "./Switch";
 export * from "./text";
+export { default as TextButton } from "./TextButton";
 
 export type { ConfirmationPopupProps } from "./ConfirmationPopup";

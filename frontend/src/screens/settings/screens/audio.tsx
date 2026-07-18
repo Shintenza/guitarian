@@ -24,7 +24,12 @@ const AudioDevicesSettings = () => {
   const { theme } = useUnistyles();
   const { data: currentConnections, isPending: areCurrentConnectionsPending } =
     useCurrentPortsConnections();
-  const { handleSubmit, control, reset } = useForm<ConnectPortsRequest>();
+  const {
+    handleSubmit,
+    control,
+    reset,
+    formState: { isDirty },
+  } = useForm<ConnectPortsRequest>();
   const { mutateAsync: connectPorts, isPending: isConnectPortsPending } =
     useConnectPorts();
 
@@ -111,7 +116,12 @@ const AudioDevicesSettings = () => {
             </View>
           ))}
       </View>
-      <Button title="Save" onPress={onSubmit} loading={isConnectPortsPending} />
+      <Button
+        title="Save"
+        onPress={onSubmit}
+        loading={isConnectPortsPending}
+        disabled={!isDirty}
+      />
     </View>
   );
 };

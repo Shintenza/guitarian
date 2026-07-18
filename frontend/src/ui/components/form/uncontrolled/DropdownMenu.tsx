@@ -57,6 +57,7 @@ const DropdownMenu = <T,>({
         listItemLabelStyle={styles.listItemLabel}
         listItemContainerStyle={styles.listItemContainerStyle}
         disableBorderRadius
+        listMode="SCROLLVIEW"
         containerProps={{
           style: styles.inputContainer,
         }}

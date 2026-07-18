@@ -1,18 +1,44 @@
 import { ConnectionConfig } from "@/stores/connection";
 import { useCallback, useEffect, useState } from "react";
+import { connectionConfigToWsAddress } from "../url";
 import { webSocketClient } from "./WebSocketClient";
 import { SocketConnectionState, SocketMessage } from "./types";
+
+type ConnectOptions = {
+  resetAttempts?: boolean;
+};
 
 const useWebsocket = () => {
   const [socketState, setSocketState] = useState<SocketConnectionState>(
     webSocketClient.getState(),
   );
 
-  const connect = useCallback((connection: ConnectionConfig) => {
-    const url = `ws://${connection.host}:${connection.port}/chain/ws`;
-    webSocketClient.setUrl(url);
-    webSocketClient.connect();
-  }, []);
+  const connectAsync = useCallback(
+    (
+      connection: ConnectionConfig,
+      options: ConnectOptions = {
+        resetAttempts: false,
+      },
+    ) => {
+      return webSocketClient.connectAsync(
+        connectionConfigToWsAddress(connection),
+        {
+          resetAttempts: options.resetAttempts,
+        },
+      );
+    },
+    [],
+  );
+
+  const connect = useCallback(
+    (connection: ConnectionConfig, options?: ConnectOptions) => {
+      const { resetAttempts = false } = options ?? {};
+      webSocketClient.connect(connectionConfigToWsAddress(connection), {
+        resetAttempts,
+      });
+    },
+    [],
+  );
 
   const disconnect = useCallback(() => webSocketClient.disconnect(), []);
 
@@ -31,7 +57,7 @@ const useWebsocket = () => {
     };
   }, []);
 
-  return { socketState, connect, disconnect, sendMessage };
+  return { socketState, connect, connectAsync, disconnect, sendMessage };
 };
 
 export default useWebsocket;

@@ -7,6 +7,11 @@ import {
   WebSocketListener,
 } from "./types";
 
+export type ConnectOptions = {
+  resetAttempts?: boolean;
+  autoReconnect?: boolean;
+};
+
 class WebSocketClient {
   private ws: WebSocket | null = null;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -14,7 +19,8 @@ class WebSocketClient {
   private listeners: Set<WebSocketListener> = new Set();
   private connectionListeners: Set<ConnectionListener> = new Set();
   private reconnectAttempts = 0;
-  private maxReconntectAttempts = 3;
+  private maxReconnectAttempts = 3;
+  private isIntentionalDisconnect = false;
 
   private connectionState: SocketConnectionState =
     SocketConnectionState.Disconnected;
@@ -24,51 +30,109 @@ class WebSocketClient {
     this.connectionListeners.forEach((listener) => listener(state));
   }
 
-  public setUrl(url: string): void {
-    this.url = url;
-  }
+  public connectAsync(
+    url: string,
+    options: ConnectOptions = {},
+  ): Promise<void> {
+    const { resetAttempts = false, autoReconnect = true } = options;
 
-  public connect(): void {
-    if (this.ws || !this.url) return;
-    this.updateState(SocketConnectionState.Connecting);
-    this.ws = new WebSocket(this.url);
-
-    this.ws.onopen = () => {
-      this.updateState(SocketConnectionState.Open);
+    if (resetAttempts) {
       this.reconnectAttempts = 0;
-      if (this.reconnectTimeout) {
-        clearTimeout(this.reconnectTimeout);
+    }
+
+    return new Promise((resolve, reject) => {
+      if (this.url === url) {
+        if (this.connectionState === SocketConnectionState.Open) {
+          return resolve();
+        }
+        if (this.connectionState === SocketConnectionState.Connecting) {
+          return reject(new Error("Already connecting to this URL"));
+        }
       }
-    };
 
-    this.ws.onmessage = (event: WebSocketMessageEvent) => {
-      try {
-        const data = camelcaseKeys(JSON.parse(event.data), { deep: true });
-        this.listeners.forEach((listener) => listener(data));
-      } catch (e) {
-        console.error(e);
+      if (this.ws) {
+        this.disconnect();
       }
-    };
 
-    this.ws.onclose = () => {
-      this.updateState(SocketConnectionState.Disconnected);
-      this.ws = null;
-      this.reconnect();
-    };
+      this.url = url;
+      this.updateState(SocketConnectionState.Connecting);
+      this.ws = new WebSocket(this.url);
 
-    this.ws.onerror = () => {
-      this.ws?.close();
-    };
+      this.ws.onopen = () => {
+        this.updateState(SocketConnectionState.Open);
+        this.reconnectAttempts = 0;
+        if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+        resolve();
+      };
+
+      this.ws.onmessage = (event: MessageEvent) => {
+        try {
+          const data = camelcaseKeys(JSON.parse(event.data), { deep: true });
+          this.listeners.forEach((listener) => listener(data));
+        } catch (e) {
+          console.error("WebSocket parse error:", e);
+        }
+      };
+
+      this.ws.onclose = () => {
+        const wasConnecting =
+          this.connectionState === SocketConnectionState.Connecting;
+
+        this.updateState(SocketConnectionState.Disconnected);
+        this.ws = null;
+
+        if (this.isIntentionalDisconnect) {
+          this.isIntentionalDisconnect = false;
+
+          if (wasConnecting) {
+            reject(new Error("Connection aborted intentionally"));
+          }
+          return;
+        }
+
+        if (
+          autoReconnect &&
+          this.reconnectAttempts < this.maxReconnectAttempts
+        ) {
+          this.reconnectTimeout = setTimeout(() => {
+            this.reconnectAttempts++;
+            this.connectAsync(url, { autoReconnect, resetAttempts: false })
+              .then(resolve)
+              .catch(reject);
+          }, 3000);
+        } else {
+          this.updateState(SocketConnectionState.TimedOut);
+          reject(new Error("WebSocket connection failed"));
+        }
+      };
+
+      this.ws.onerror = () => {
+        this.ws?.close();
+      };
+    });
   }
 
-  private reconnect(): void {
-    if (this.reconnectAttempts < this.maxReconntectAttempts) {
-      this.reconnectTimeout = setTimeout(() => {
-        this.reconnectAttempts++;
-        this.connect();
-      }, 3000);
+  public connect(
+    url: string,
+    options: ConnectOptions = { resetAttempts: false, autoReconnect: true },
+  ): void {
+    const { resetAttempts, autoReconnect } = options;
+    this.connectAsync(url, { resetAttempts, autoReconnect }).catch((error) => {
+      console.warn(error.message);
+    });
+  }
+
+  public disconnect() {
+    this.isIntentionalDisconnect = true;
+
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+    }
+
+    if (this.ws) {
+      this.ws.close();
     } else {
-      this.updateState(SocketConnectionState.TimedOut);
+      this.updateState(SocketConnectionState.Disconnected);
     }
   }
 
@@ -99,11 +163,6 @@ class WebSocketClient {
 
   public getState() {
     return this.connectionState;
-  }
-
-  public disconnect() {
-    this.ws?.close();
-    this.updateState(SocketConnectionState.Disconnected);
   }
 }
 

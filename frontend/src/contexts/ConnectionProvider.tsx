@@ -1,6 +1,6 @@
 import useConnectionHandler, {
   UseConnectionHandlerResult,
-} from "@/utils/api/useConnection";
+} from "@/utils/api/useConnectionHandler";
 import { createContext, ReactNode, useContext } from "react";
 
 type ConnectionContextType = UseConnectionHandlerResult;
@@ -16,6 +16,8 @@ export const useConnection = () => {
 
 const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   const connectionHanlder = useConnectionHandler();
+
+  console.log("CONNECTION DEBUG: ", connectionHanlder);
 
   return (
     <ConnectionContext.Provider value={connectionHanlder}>

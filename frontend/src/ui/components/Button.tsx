@@ -40,7 +40,13 @@ const Button = ({
   });
 
   return (
-    <Pressable {...rest} style={[styles.container({ color }), style]}>
+    <Pressable
+      {...rest}
+      style={[
+        styles.container({ color, disabled: Boolean(rest.disabled) }),
+        style,
+      ]}
+    >
       {loading && (
         <View style={styles.spinnerContainer}>
           <Spinner
@@ -58,7 +64,13 @@ const Button = ({
 };
 
 const styles = StyleSheet.create((theme) => ({
-  container: ({ color }: { color?: ColorValue }) => ({
+  container: ({
+    color,
+    disabled,
+  }: {
+    color?: ColorValue;
+    disabled?: boolean;
+  }) => ({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
@@ -66,10 +78,14 @@ const styles = StyleSheet.create((theme) => ({
       variant: {
         solid: {
           borderColor: "transparent",
-          backgroundColor: color ?? theme.colors.orange,
+          backgroundColor: disabled
+            ? theme.colors.background.secondary
+            : (color ?? theme.colors.orange),
         },
         outline: {
-          borderColor: color ?? theme.colors.orange,
+          borderColor: disabled
+            ? theme.colors.background.secondary
+            : (color ?? theme.colors.orange),
         },
       },
       size: {

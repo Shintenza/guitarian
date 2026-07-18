@@ -15,7 +15,7 @@ const SETTINGS_SECTION = [
     title: "Connection",
     description: "Manage connection with the engine",
     iconName: "web",
-    path: "/settings/connections",
+    path: "/settings/connection",
   },
 ];
 

@@ -6,6 +6,7 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 export type InputProps = {
   value: string;
   label?: string;
+  description?: string;
   containerStyle?: ViewStyle;
   onChange?: (value: string) => void;
 } & Omit<TextInputProps, "onChange">;
@@ -14,13 +15,21 @@ const Input = ({
   value,
   label,
   containerStyle,
+  description,
   onChange,
   ...rest
 }: InputProps) => {
   const { theme } = useUnistyles();
   return (
     <View style={[styles.container, containerStyle]}>
-      {label && <Text>{label}</Text>}
+      <View>
+        {label && <Text>{label}</Text>}
+        {description && (
+          <Text size="XS" color={theme.colors.text.secondary}>
+            {description}
+          </Text>
+        )}
+      </View>
 
       <TextInput
         value={value}
@@ -36,7 +45,7 @@ const Input = ({
 
 const styles = StyleSheet.create((theme) => ({
   container: {
-    gap: 6,
+    gap: 8,
   },
   input: {
     fontFamily: fonts.InterRegular,
