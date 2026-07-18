@@ -1,4 +1,5 @@
 export const shared = {
+  cadmiumYellow: "#FDDA0D",
   orange: "#FF7200",
   green: "#388E3C",
   darkOrange: "#E65100",

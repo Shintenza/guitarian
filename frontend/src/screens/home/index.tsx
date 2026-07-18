@@ -3,6 +3,7 @@ import { TrueSheet } from "@lodev09/react-native-true-sheet";
 import { useRef, useState } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import ChainOverlay from "./components/ChainOverlay";
 import ChainRenderer from "./components/chainRenderer";
 import Controls from "./components/Controls";
 import Header from "./components/Header";
@@ -43,6 +44,7 @@ const HomeScreen = () => {
         onCancelEdit={() => setIsEditMode(false)}
         onAddPress={async () => await librarySheetRef.current?.present()}
       />
+      <ChainOverlay />
     </View>
   );
 };
