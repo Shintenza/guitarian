@@ -1,3 +1,4 @@
+import useAutoRefetchQueries from "@/utils/api/useAutoRefetchQueries";
 import useConnectionHandler, {
   UseConnectionHandlerResult,
 } from "@/utils/api/useConnectionHandler";
@@ -16,8 +17,7 @@ export const useConnection = () => {
 
 const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   const connectionHanlder = useConnectionHandler();
-
-  console.log("CONNECTION DEBUG: ", connectionHanlder);
+  useAutoRefetchQueries({ isConnected: connectionHanlder.isConnected });
 
   return (
     <ConnectionContext.Provider value={connectionHanlder}>
