@@ -31,3 +31,9 @@ export type GetAllPresetsResponse = {
 export type DeletePresetParams = {
   presetId: number;
 };
+
+export type UpdatePresetRequest = {
+  id: number;
+  presetName: string;
+  updatePresetChain?: boolean;
+};

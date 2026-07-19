@@ -24,8 +24,13 @@ const ControlledInput = <T extends FieldValues>({
       name={name}
       rules={rules}
       control={control}
-      render={({ field: { value, onChange } }) => (
-        <Input value={value} onChange={onChange} {...rest} />
+      render={({ field: { value, onChange }, fieldState: { error } }) => (
+        <Input
+          value={value}
+          onChange={onChange}
+          error={error?.message}
+          {...rest}
+        />
       )}
     />
   );

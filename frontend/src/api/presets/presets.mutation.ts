@@ -5,6 +5,7 @@ import {
   LoadPresetResponse,
   SavePresetRequest,
   SavePresetResponse,
+  UpdatePresetRequest,
 } from "./types";
 
 export const loadPreset = async ({ presetId }: LoadPresetParams) => {
@@ -23,4 +24,12 @@ export const savePreset = async (data: SavePresetRequest) => {
 
 export const deletePreset = async ({ presetId }: DeletePresetParams) => {
   return await apiFetch(`/presets/preset/${presetId}`, { method: "DELETE" });
+};
+
+export const updatePreset = async (data: UpdatePresetRequest) => {
+  const { id, ...payload } = data;
+  await apiFetch(`/presets/preset/${id}`, {
+    method: "PATCH",
+    body: payload,
+  });
 };

@@ -1,6 +1,6 @@
 import { useCurrentChain } from "@/api/chain";
 import { ChainPlugin } from "@/types/plugins";
-import { chainWithStringId } from "@/utils/chain";
+import { chainWithStringId, normalizeChainForComparison } from "@/utils/chain";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMemo } from "react";
 import { create } from "zustand";
@@ -71,11 +71,13 @@ export const usePresetStore = () => {
     );
 
   const isDirty = useMemo(() => {
-    const snapshot = originalChainSnapshot || [];
+    const normalizedSnapshot = normalizeChainForComparison(
+      originalChainSnapshot || [],
+    );
+    const normalizedCurrentChain = normalizeChainForComparison(currentChain);
 
-    const currentChainStr = JSON.stringify(currentChain);
-    const snapshotStr = JSON.stringify(snapshot);
-
+    const currentChainStr = JSON.stringify(normalizedCurrentChain);
+    const snapshotStr = JSON.stringify(normalizedSnapshot);
     return currentChainStr !== snapshotStr;
   }, [currentChain, originalChainSnapshot]);
 

@@ -1,12 +1,18 @@
-import { useSavePreset } from "@/api/presets";
-import { Button, Input, Popup, Text } from "@/ui/components";
+import { useSavePreset, useUpdatePreset } from "@/api/presets";
+import { usePresetStore } from "@/stores/preset";
+import { Button, ControlledInput, Popup, Text } from "@/ui/components";
 import { PopupRef } from "@/ui/components/Popup";
 import { withHaptics } from "@/utils/haptics";
 import { mergeRefs } from "@/utils/ref";
-import { Ref, useRef, useState } from "react";
+import { Ref, useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
 import { View } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { toast } from "sonner-native";
+
+type PresetForm = {
+  name: string;
+};
 
 type SavePresetPopupProps = {
   ref: Ref<PopupRef>;
@@ -14,20 +20,48 @@ type SavePresetPopupProps = {
 
 const SavePresetPopup = ({ ref }: SavePresetPopupProps) => {
   const innerRef = useRef<PopupRef>(null);
+  const { name, id, isDirty: isPresetModified } = usePresetStore();
   const { theme } = useUnistyles();
-  const [value, setValue] = useState("");
+  const {
+    control,
+    formState: { isDirty },
+    handleSubmit,
+    reset,
+  } = useForm<PresetForm>({
+    defaultValues: { name },
+  });
   const { mutateAsync: savePreset, isPending: isSaveAssetPending } =
     useSavePreset();
+  const { mutateAsync: updatePreset, isPending: isUpdatePresetPending } =
+    useUpdatePreset();
 
-  const onSave = async () => {
-    if (!value) return;
+  const onSave = async ({ name }: PresetForm) => {
+    if (!name) return;
+
     try {
-      await savePreset({ presetName: value });
+      if (isDirty) {
+        await savePreset({ presetName: name });
+      } else if (!isDirty && id) {
+        await updatePreset({
+          presetName: name,
+          id,
+          updatePresetChain: isPresetModified,
+        });
+      }
+      const action = isDirty ? "saved" : "updated";
+      toast.success(`Successfully ${action} preset`);
       innerRef.current?.close();
     } catch {
-      toast.error("Failed to save the preset");
+      const action = isDirty ? "save" : "update";
+      toast.error(`Failed to ${action} the preset`);
     }
   };
+
+  useEffect(() => {
+    reset({ name });
+  }, [name, reset]);
+
+  const buttonTitle = isDirty ? "Create new" : "Update current preset";
 
   return (
     <Popup
@@ -38,24 +72,24 @@ const SavePresetPopup = ({ ref }: SavePresetPopupProps) => {
       <Text variant="bold" size="H2">
         Save preset
       </Text>
-      <Input
+      <ControlledInput
+        control={control}
+        name="name"
         placeholder="E.g. I wanna be like Metallica"
         label="Name"
-        value={value}
-        onChange={setValue}
+        rules={{ required: "Name is required" }}
       />
       <View style={styles.buttonsRow}>
         <Button
           title="Cancel"
-          style={styles.buttonStyle}
           color={theme.colors.background.tertiary}
           onPress={() => innerRef.current?.close()}
         />
         <Button
-          title="Save"
-          style={styles.buttonStyle}
-          loading={isSaveAssetPending}
-          onPress={withHaptics(onSave)}
+          title={buttonTitle}
+          loading={isSaveAssetPending || isUpdatePresetPending}
+          // eslint-disable-next-line react-hooks/refs
+          onPress={withHaptics(handleSubmit(onSave))}
         />
       </View>
     </Popup>
@@ -67,11 +101,7 @@ const styles = StyleSheet.create({
     gap: 12,
     minWidth: 300,
   },
-  buttonStyle: {
-    flex: 1,
-  },
   buttonsRow: {
-    flexDirection: "row",
     gap: 8,
   },
 });

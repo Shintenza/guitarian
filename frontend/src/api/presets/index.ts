@@ -3,7 +3,12 @@ import { usePresetStore } from "@/stores/preset";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClearChain, useCurrentChain } from "../chain";
 import KEYS from "./presets.keys";
-import { deletePreset, loadPreset, savePreset } from "./presets.mutation";
+import {
+  deletePreset,
+  loadPreset,
+  savePreset,
+  updatePreset,
+} from "./presets.mutation";
 import { getAllPresets } from "./presets.queries";
 import { DeletePresetParams } from "./types";
 
@@ -27,6 +32,24 @@ export const useLoadPreset = () => {
         id: variables.presetId,
         name: data.name,
         chain: data.chain,
+      });
+    },
+  });
+};
+
+export const useUpdatePreset = () => {
+  const queryClient = useQueryClient();
+  const { loadPreset } = usePresetStore();
+  const { data: chain } = useCurrentChain();
+
+  return useMutation({
+    mutationFn: updatePreset,
+    onSuccess: (_, variables) => {
+      queryClient.refetchQueries({ queryKey: [...KEYS.getAllPresets] });
+      loadPreset({
+        id: variables.id,
+        chain: chain ?? [],
+        name: variables.presetName,
       });
     },
   });

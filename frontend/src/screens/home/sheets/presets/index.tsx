@@ -2,6 +2,9 @@ import { useAllPresets, useDeletePreset, useLoadPreset } from "@/api/presets";
 import { useConfirm } from "@/contexts/ConfirmationProvider";
 import { usePresetStore } from "@/stores/preset";
 import { PresetListItem, Spinner, Text } from "@/ui/components";
+import { mergeRefs } from "@/utils/ref";
+import { TrueSheet } from "@lodev09/react-native-true-sheet";
+import { useRef } from "react";
 import { ScrollView, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { toast } from "sonner-native";
@@ -9,7 +12,8 @@ import { HomeScreenSheet, HomeScreenSheetProps } from "./../shared";
 
 type PresetsSheetProps = Omit<HomeScreenSheetProps, "children">;
 
-const PresetsSheet = (props: PresetsSheetProps) => {
+const PresetsSheet = ({ ref, onWillDismiss }: PresetsSheetProps) => {
+  const sheetRef = useRef<TrueSheet>(null);
   const { data, isPending } = useAllPresets();
   const { id: activePresetId } = usePresetStore();
   const { confirm } = useConfirm();
@@ -27,6 +31,7 @@ const PresetsSheet = (props: PresetsSheetProps) => {
   const onPresetLoad = async (id: number) => {
     try {
       await loadPreset({ presetId: id });
+      sheetRef.current?.dismiss();
     } catch {
       toast.error("Failed to load the preset");
     }
@@ -37,6 +42,7 @@ const PresetsSheet = (props: PresetsSheetProps) => {
       onConfirm: async () => {
         try {
           await deletePreset({ presetId: id });
+          sheetRef.current?.dismiss();
         } catch {
           toast.error("Failed to delete the preset");
         }
@@ -45,7 +51,10 @@ const PresetsSheet = (props: PresetsSheetProps) => {
   };
 
   return (
-    <HomeScreenSheet {...props}>
+    <HomeScreenSheet
+      ref={mergeRefs(ref, sheetRef)}
+      onWillDismiss={onWillDismiss}
+    >
       <ScrollView contentContainerStyle={styles.container}>
         <Text variant="bold" size="H1">
           Presets
