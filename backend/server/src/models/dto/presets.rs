@@ -7,6 +7,13 @@ pub struct SaveCurrentPreset {
   pub preset_name: String,
 }
 
+#[derive(Deserialize)]
+pub struct UpdatePresetRequest {
+  pub preset_name: Option<String>,
+  #[serde(default)]
+  pub update_preset_chain: bool,
+}
+
 #[derive(FromQueryResult, Serialize)]
 pub struct PresetListItem {
   pub id: u32,
