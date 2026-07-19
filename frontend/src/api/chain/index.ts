@@ -59,7 +59,7 @@ export const useRemoveChainItem = () => {
     mutationFn: async ({ pluginId }: { pluginId: string }) => {
       await removeChainItem({ pluginId: parseInt(pluginId) });
     },
-    onSuccess: (_, variables) => {
+    onMutate: (variables) => {
       removeOptimistically(variables.pluginId);
     },
     onError: rollback,

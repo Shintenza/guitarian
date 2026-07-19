@@ -5,7 +5,6 @@ import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import ChainOverlay from "./components/ChainOverlay";
 import ChainRenderer from "./components/chainRenderer";
-import Controls from "./components/Controls";
 import Header from "./components/Header";
 import LibrarySheet from "./sheets/library";
 import ParamsSheet, { ParamsSheetRef } from "./sheets/params";
@@ -15,7 +14,6 @@ const HomeScreen = () => {
   const librarySheetRef = useRef<TrueSheet>(null);
   const presetsSheetRef = useRef<TrueSheet>(null);
   const paramsSheetRef = useRef<ParamsSheetRef>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
   const [isPresetsModalActive, setIsPresetsModalActive] = useState(false);
 
   return (
@@ -23,15 +21,14 @@ const HomeScreen = () => {
       <BlueprintGrid />
       <Header
         isPresetsModalActive={isPresetsModalActive}
-        onEdit={() => setIsEditMode(true)}
         onPresetPress={async () => {
           setIsPresetsModalActive(true);
           await presetsSheetRef.current?.present();
         }}
       />
       <ChainRenderer
-        isEditMode={isEditMode}
         onChainItemPress={(pluginId) => paramsSheetRef.current?.open(pluginId)}
+        onAddPluginPress={() => librarySheetRef.current?.present()}
       />
       <LibrarySheet ref={librarySheetRef} />
       <PresetsSheet
@@ -39,11 +36,6 @@ const HomeScreen = () => {
         onWillDismiss={() => setIsPresetsModalActive(false)}
       />
       <ParamsSheet ref={paramsSheetRef} />
-      <Controls
-        isEditMode={isEditMode}
-        onCancelEdit={() => setIsEditMode(false)}
-        onAddPress={async () => await librarySheetRef.current?.present()}
-      />
       <ChainOverlay />
     </View>
   );

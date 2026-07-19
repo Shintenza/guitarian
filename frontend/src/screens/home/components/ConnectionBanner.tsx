@@ -3,6 +3,7 @@ import { Text, TextButton } from "@/ui/components";
 import { useRouter } from "expo-router";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import { CONNECTION_BANNER_HEIGHT } from "./consts";
 
 const ConnectionBanner = () => {
   const { isConnecting, isError, retry } = useConnection();
@@ -27,7 +28,7 @@ const ConnectionBanner = () => {
 
 const styles = StyleSheet.create((theme) => ({
   banner: ({ critical }: { critical: boolean }) => ({
-    paddingVertical: 3,
+    height: CONNECTION_BANNER_HEIGHT,
     backgroundColor: critical ? theme.colors.red : theme.colors.cadmiumYellow,
     width: "100%",
     alignItems: "center",

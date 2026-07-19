@@ -1,8 +1,4 @@
-import {
-  useChainReorder,
-  useCurrentChain,
-  useRemoveChainItem,
-} from "@/api/chain";
+import { useCurrentChain } from "@/api/chain";
 import ChainCard from "@/ui/components/cards/ChainCard";
 import { CARD_SIZES } from "@/ui/components/cards/size";
 import { CardTypes } from "@/ui/components/cards/types";
@@ -11,40 +7,41 @@ import { useLatestRef } from "@/utils/ref";
 import { useCallback, useMemo } from "react";
 import { View, useWindowDimensions } from "react-native";
 import Animated, { useAnimatedRef } from "react-native-reanimated";
-import Sortable, {
-  ActiveItemDroppedCallback,
-  SortableGridRenderItem,
-} from "react-native-sortables";
+import Sortable, { SortableGridRenderItem } from "react-native-sortables";
 import { StyleSheet } from "react-native-unistyles";
-import { toast } from "sonner-native";
+import { GHOST_NODE_PREFIX, GRID_COLUMNS } from "../consts";
+import AddPluginButton from "./AddPluginButton";
 import ChainPath from "./chainPath";
+import DragArea from "./DragArea";
 import { GridItem } from "./types";
 import { useChainDragStartegy } from "./useChainDragStartegy";
-import { GHOST_NODE_PREFIX, snakifyArray, toLogical } from "./utils";
+import useHandleGestures from "./useHandleGestures";
+import { snakifyArray } from "./utils";
 
-const COLUMNS = 3;
 const PADDING_SIZE = 24;
 const GRID_GAP = 12;
 
 type ChainRendererProps = {
-  isEditMode: boolean;
   onChainItemPress: (pluginId: string) => void;
+  onAddPluginPress: () => void;
 };
 
 const ChainRenderer = ({
-  isEditMode,
   onChainItemPress,
+  onAddPluginPress,
 }: ChainRendererProps) => {
-  const { mutateAsync: reorderChain, isPending: isReorderPending } =
-    useChainReorder();
-
   const onChainItemPressRef = useLatestRef(onChainItemPress);
-
   const {
-    mutateAsync: removeItem,
-    isPending: isRemovePending,
-    variables: removeVariables,
-  } = useRemoveChainItem();
+    showDragArea,
+    dragAreaHeight,
+    dragsOverZone,
+    isDeletePending,
+    isReorderPending,
+    onDragStart,
+    onContainerLayout,
+    onDragMove,
+    onDragEnd,
+  } = useHandleGestures();
 
   const { width } = useWindowDimensions();
   const scrollableRef = useAnimatedRef<Animated.ScrollView>();
@@ -53,10 +50,10 @@ const ChainRenderer = ({
 
   const visualData = useMemo(() => {
     const padded: GridItem[] = [...chain];
-    const remainder = padded.length % COLUMNS;
+    const remainder = padded.length % GRID_COLUMNS;
 
     if (remainder !== 0) {
-      const missing = COLUMNS - remainder;
+      const missing = GRID_COLUMNS - remainder;
       for (let i = 0; i < missing; i++) {
         padded.push({
           id: `${GHOST_NODE_PREFIX}${i}`,
@@ -68,35 +65,8 @@ const ChainRenderer = ({
       }
     }
 
-    return snakifyArray(padded, COLUMNS);
+    return snakifyArray(padded, GRID_COLUMNS);
   }, [chain]);
-
-  const handleOrderChange: ActiveItemDroppedCallback = useCallback(
-    async (data) => {
-      const fromIndexLogical = toLogical(data.fromIndex, COLUMNS);
-      const toIndexLogical = toLogical(data.toIndex, COLUMNS);
-      try {
-        await reorderChain({
-          indexFrom: fromIndexLogical,
-          indexTo: toIndexLogical,
-        });
-      } catch {
-        toast.error("Failed to reorder chain");
-      }
-    },
-    [reorderChain],
-  );
-
-  const removeChainItem = useCallback(
-    async (pluginId: string) => {
-      try {
-        await removeItem({ pluginId });
-      } catch {
-        toast.error("Faield to remove chain item");
-      }
-    },
-    [removeItem],
-  );
 
   const renderItem = useCallback<SortableGridRenderItem<GridItem>>(
     ({ item }) => {
@@ -107,65 +77,67 @@ const ChainRenderer = ({
               <View style={{ flex: 1, opacity: 0 }} pointerEvents="none" />
             ) : (
               <ChainCard
-                disabled={isReorderPending || isRemovePending}
+                disabled={isReorderPending}
                 name={item.metadata.name}
                 effectClass={item.metadata.class}
                 onPress={() => onChainItemPressRef.current(item.id)}
-                pendingDeletion={
-                  removeVariables?.pluginId === item.id && isRemovePending
-                }
-                onDelete={
-                  isEditMode ? () => removeChainItem(item.id) : undefined
-                }
               />
             )}
           </Sortable.Handle>
         </Sortable.Touchable>
       );
     },
-    [
-      isEditMode,
-      isRemovePending,
-      isReorderPending,
-      onChainItemPressRef,
-      removeChainItem,
-      removeVariables?.pluginId,
-    ],
+    [isReorderPending, onChainItemPressRef],
   );
 
   const startY = PADDING_SIZE + cardHeight / 2;
   const stepHeight = GRID_GAP + cardHeight;
 
+  const sortEnabled = !isReorderPending && !isDeletePending;
+
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onLayout={onContainerLayout}>
       <ChainPath
         startY={startY}
         width={width}
         chainLength={chain?.length}
-        numberOfColumns={COLUMNS}
+        numberOfColumns={GRID_COLUMNS}
         padding={10}
         stepHeight={stepHeight}
       />
       <Animated.ScrollView ref={scrollableRef} style={styles.gridContainer}>
         <Sortable.Grid
-          sortEnabled={!isReorderPending}
+          sortEnabled={sortEnabled}
           data={visualData}
-          columns={COLUMNS}
+          columns={GRID_COLUMNS}
           rowGap={GRID_GAP}
           columnGap={GRID_GAP}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           customHandle
           strategy={useChainDragStartegy}
-          onActiveItemDropped={handleOrderChange}
           scrollableRef={scrollableRef}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onDragMove={onDragMove}
         />
       </Animated.ScrollView>
+      {showDragArea && (
+        <DragArea
+          height={dragAreaHeight}
+          active={dragsOverZone}
+          isDeleting={isDeletePending}
+        />
+      )}
+      <AddPluginButton
+        onPress={onAddPluginPress}
+        offsetY={showDragArea ? dragAreaHeight : undefined}
+      />
     </View>
   );
 };
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -173,6 +145,6 @@ const styles = StyleSheet.create((theme) => ({
     paddingTop: PADDING_SIZE,
     paddingHorizontal: PADDING_SIZE,
   },
-}));
+});
 
 export default ChainRenderer;

@@ -1,39 +1,38 @@
+import { useClearChain } from "@/api/chain";
+import { useConfirm } from "@/contexts/ConfirmationProvider";
 import { usePresetStore } from "@/stores/preset";
-import { IconButton, Text } from "@/ui/components";
+import { Menu, Text } from "@/ui/components";
 import { PopupRef } from "@/ui/components/Popup";
 import SaveIcon from "@expo/material-symbols/save.xml";
 import { Icon } from "@expo/ui";
-import { MenuView, NativeActionEvent } from "@expo/ui/community/menu";
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import { useRef } from "react";
 import { Pressable, View } from "react-native";
 import Animated, { useSharedValue, withTiming } from "react-native-reanimated";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { toast } from "sonner-native";
 import SavePresetPopup from "./SavePresetPopup";
-
-const editIcon = Icon.select({
-  ios: "pencil",
-  android: import("@expo/material-symbols/edit.xml"),
-});
 
 const saveIcon = Icon.select({
   ios: "square.and.arrow.down",
   android: SaveIcon,
 });
 
+const deleteIcon = Icon.select({
+  ios: "trash",
+  android: import("@expo/material-symbols/delete.xml"),
+});
+
 type HeaderProps = {
   isPresetsModalActive?: boolean;
-  onEdit: () => void;
   onPresetPress: () => void;
 };
 
-const Header = ({
-  isPresetsModalActive,
-  onEdit,
-  onPresetPress,
-}: HeaderProps) => {
+const Header = ({ isPresetsModalActive, onPresetPress }: HeaderProps) => {
   const { name, isDirty } = usePresetStore();
   const chevronProgress = useSharedValue(0);
+  const { confirm } = useConfirm();
+  const { mutateAsync: clearChain } = useClearChain();
   const ref = useRef<PopupRef>(null);
 
   const onTitlePress = () => {
@@ -45,13 +44,16 @@ const Header = ({
     onPresetPress();
   };
 
-  const onActionPress = (e: NativeActionEvent) => {
-    const action = e.nativeEvent.event;
-    if (action === "edit") {
-      onEdit();
-    } else if (action === "save") {
-      ref.current?.open();
-    }
+  const handleClearChain = async () => {
+    await confirm({
+      onConfirm: async () => {
+        try {
+          await clearChain();
+        } catch {
+          toast.error("Failed to clear the chain");
+        }
+      },
+    });
   };
 
   const { theme } = useUnistyles();
@@ -74,23 +76,32 @@ const Header = ({
         />
       </Pressable>
       <View style={styles.controlsBox}>
-        <MenuView
-          onPressAction={onActionPress}
-          dropdownColor={theme.colors.background.tertiary}
+        <Menu
           actions={[
-            { id: "edit", title: "Edit", image: editIcon },
             {
               id: "save",
               title: "Save",
               image: saveIcon,
+              onPress: () => {
+                ref.current?.open();
+              },
               attributes: {
                 disabled: !isDirty,
               },
             },
+            {
+              id: "clear",
+              title: "Clear chain",
+              image: deleteIcon,
+              onPress: () => {
+                handleClearChain();
+              },
+              attributes: {
+                destructive: true,
+              },
+            },
           ]}
-        >
-          <IconButton iconName="dots-vertical" backgroundColor="transparent" />
-        </MenuView>
+        />
       </View>
       <SavePresetPopup ref={ref} />
     </View>
@@ -116,8 +127,8 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   controlsBox: {
     position: "absolute",
-    right: 6,
-    bottom: 2,
+    right: 8,
+    bottom: 10,
   },
 }));
 

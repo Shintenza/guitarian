@@ -1,6 +1,4 @@
-import { DragEndParams } from "react-native-sortables/dist/typescript/types";
-
-export const GHOST_NODE_PREFIX = "ghost_";
+import { CONNECTION_BANNER_HEIGHT, DRAG_AREA_HEIGHT } from "../consts";
 
 export const toLogical = (vIndex: number, columns: number) => {
   "worklet";
@@ -30,4 +28,18 @@ export const snakifyArray = <T>(array: T[], columns: number) => {
   return result;
 };
 
-export const computeChanges = (data: DragEndParams) => {};
+export const getAddButtonOffset = ({
+  isDragAreaActive,
+  isDisconnected,
+}: {
+  isDragAreaActive?: boolean;
+  isDisconnected?: boolean;
+}) => {
+  if (isDisconnected) {
+    return CONNECTION_BANNER_HEIGHT;
+  }
+  if (isDragAreaActive) {
+    return DRAG_AREA_HEIGHT;
+  }
+  return 0;
+};

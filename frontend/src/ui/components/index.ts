@@ -11,6 +11,7 @@ export { default as Input } from "./form/uncontrolled/Input";
 export { default as Slider } from "./form/uncontrolled/Slider";
 export { default as IconButton } from "./IconButton";
 export { default as KeyboardHandler } from "./KeyboardHandler";
+export { default as Menu } from "./Menu";
 export { default as Popup } from "./Popup";
 export { default as PresetListItem } from "./PresetListItem";
 export { default as SettingsOption } from "./SettingsOption";

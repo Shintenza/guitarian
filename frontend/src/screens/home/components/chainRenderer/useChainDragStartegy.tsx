@@ -3,7 +3,8 @@ import {
   useCommonValuesContext,
   useGridLayoutContext,
 } from "react-native-sortables";
-import { GHOST_NODE_PREFIX, toLogical, toVisual } from "./utils";
+import { GHOST_NODE_PREFIX } from "../consts";
+import { toLogical, toVisual } from "./utils";
 
 function snakeInsert(
   array: string[],
