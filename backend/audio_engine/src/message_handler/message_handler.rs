@@ -2,7 +2,7 @@ use bincode::{config, encode_to_vec};
 use shared::{
   commands::{
     PushCommand, RequestCommand,
-    RequestCommandResponse::{self, CurrentConnectionsState},
+    RequestCommandResponse::{self, CurrentConnectionsState, CurrentEngineConfig},
     RequestError,
     StateChangeEvent::{self},
   },
@@ -70,6 +70,10 @@ impl MessageHandler {
             output_devices: inputs,
           },
         ))
+      }
+      RequestCommand::GetCurrentEngineConfig => {
+        let config = self.audio_engine.get_client_config();
+        Ok(CurrentEngineConfig(config))
       }
       RequestCommand::GetCurrentConnectionsState => {
         let state = self
@@ -157,6 +161,16 @@ impl MessageHandler {
           |_| RequestCommandResponse::ConnectedPorts,
           |_| RequestError::InternalError,
           Some(StateChangeEvent::ConnectionsChanged),
+        )
+        .await
+      }
+      RequestCommand::SetBufferSize(buffer_size) => {
+        process_action(
+          tx_pub,
+          self.audio_engine.set_buffer_size(buffer_size),
+          |_| RequestCommandResponse::BufferSizeChanged,
+          |_| RequestError::InternalError,
+          Some(StateChangeEvent::BufferSizeChanged { buffer_size }),
         )
         .await
       }

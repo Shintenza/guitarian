@@ -5,7 +5,8 @@ use axum::{
 use shared::{
   commands::{RequestCommand, RequestCommandResponse, RequestError},
   data::{
-    AudioConnections, AvailableAudioDevices, ChainItem, PluginMetadata, PluginQuery, PresetItem,
+    AudioConnections, AvailableAudioDevices, BufferSize, ChainItem, EngineConfig, PluginMetadata,
+    PluginQuery, PresetItem,
   },
 };
 
@@ -98,4 +99,16 @@ define_command!(
     ConnectPorts { input_device_port: String, output_devices: Vec<String> }
     => req: ConnectPorts
     => res: ConnectedPorts
+);
+
+define_command!(
+    GetEngineConfig {}
+    => req: GetCurrentEngineConfig
+    => res: CurrentEngineConfig(EngineConfig)
+);
+
+define_command!(
+    ChangeBufferSize { buffer_size: BufferSize }
+    => req: SetBufferSize
+    => res: BufferSizeChanged
 );

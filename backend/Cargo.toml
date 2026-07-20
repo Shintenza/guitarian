@@ -12,6 +12,7 @@ tokio-util = "0.7.18"
 zeromq = "0.5.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
+serde_repr = "0.1.21"
 bincode = { version = "2.0.1", features = ["derive"] }
 dotenvy = "0.15.7"
 strum = { version = "0.28", features = ["derive"] }

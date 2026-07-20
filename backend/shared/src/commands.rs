@@ -2,7 +2,8 @@ use bincode::{Decode, Encode};
 use serde::Serialize;
 
 use crate::data::{
-  AudioConnections, AvailableAudioDevices, ChainItem, PluginMetadata, PluginQuery, PresetItem,
+  AudioConnections, AvailableAudioDevices, BufferSize, ChainItem, EngineConfig, PluginMetadata,
+  PluginQuery, PresetItem,
 };
 
 #[derive(Encode, Decode)]
@@ -15,6 +16,7 @@ pub enum RequestError {
 #[derive(Encode, Decode)]
 pub enum RequestCommand {
   GetAvailableAudioDevices,
+  GetCurrentEngineConfig,
   GetCurrentConnectionsState,
   ConnectPorts(String, Vec<String>),
   GetAvailablePlugins(PluginQuery),
@@ -23,6 +25,7 @@ pub enum RequestCommand {
   LoadPreset(u32, Vec<PresetItem>),
   ChangePluginPosition(u32, usize),
   UnloadPlugin(u32),
+  SetBufferSize(BufferSize),
   RemoveAll,
 }
 
@@ -35,6 +38,7 @@ pub enum PushCommand {
 pub enum RequestCommandResponse {
   AvaialbleAudioDevices(AvailableAudioDevices),
   CurrentConnectionsState(AudioConnections),
+  CurrentEngineConfig(EngineConfig),
   AvailablePlugins(Vec<PluginMetadata>),
   CurrentState(Vec<ChainItem>),
   LoadedPlugin(ChainItem),
@@ -42,6 +46,7 @@ pub enum RequestCommandResponse {
   ConnectedPorts,
   UnloadPlugin,
   RemoveAll,
+  BufferSizeChanged,
   Error(String),
 }
 
@@ -68,5 +73,8 @@ pub enum StateChangeEvent {
     plugin_id: u32,
     port_id: u32,
     new_value: f32,
+  },
+  BufferSizeChanged {
+    buffer_size: BufferSize,
   },
 }

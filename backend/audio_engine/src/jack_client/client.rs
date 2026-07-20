@@ -1,6 +1,7 @@
 use anyhow::Result;
 use jack::{AsyncClient, AudioIn, AudioOut, Client, ClientOptions, PortFlags};
 use ringbuf::HeapCons;
+use shared::data::{BufferSize, EngineConfig};
 use std::env;
 use std::sync::{Arc, Mutex};
 
@@ -169,6 +170,24 @@ impl AudioEngine {
 
     apply_port_changes(client, &self.ports_names.output_l, &add_l, &rem_l)?;
     apply_port_changes(client, &self.ports_names.output_r, &add_r, &rem_r)?;
+    Ok(())
+  }
+
+  pub fn get_client_config(&self) -> EngineConfig {
+    let sample_rate = self.sample_rate();
+    let buffer_size = self.async_client.as_client().buffer_size();
+
+    return EngineConfig {
+      sample_rate,
+      buffer_size,
+    };
+  }
+
+  pub fn set_buffer_size(&self, buffer_size: BufferSize) -> Result<()> {
+    self
+      .async_client
+      .as_client()
+      .set_buffer_size(buffer_size as u32)?;
     Ok(())
   }
 }

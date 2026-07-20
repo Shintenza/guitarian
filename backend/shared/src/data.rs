@@ -1,6 +1,7 @@
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
-use strum::EnumString;
+use serde_repr::{Deserialize_repr, Serialize_repr};
+use strum::{EnumIter, EnumString, IntoEnumIterator};
 
 #[derive(Decode, Encode, Serialize, Deserialize)]
 pub enum ControlType {
@@ -101,4 +102,23 @@ pub struct AudioConnections {
 pub struct AvailableAudioDevices {
   pub input_ports: Vec<String>,
   pub output_devices: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Encode, Decode, Debug, Clone, Default)]
+pub struct EngineConfig {
+  pub sample_rate: u32,
+  pub buffer_size: u32,
+}
+
+#[derive(
+  Clone, Copy, PartialEq, Eq, Serialize_repr, Deserialize_repr, EnumIter, Encode, Decode,
+)]
+#[repr(u32)]
+pub enum BufferSize {
+  Frames64 = 64,
+  Frames128 = 128,
+  Frames256 = 256,
+  Frames512 = 512,
+  Frames1024 = 1024,
+  Frames2048 = 2048,
 }
