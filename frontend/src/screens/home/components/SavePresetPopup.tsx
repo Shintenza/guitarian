@@ -68,6 +68,7 @@ const SavePresetPopup = ({ ref }: SavePresetPopupProps) => {
       ref={mergeRefs(innerRef, ref)}
       style={styles.container}
       closeOnBackdropPress={false}
+      withOverlay
     >
       <Text variant="bold" size="H2">
         Save preset

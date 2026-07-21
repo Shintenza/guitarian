@@ -15,7 +15,7 @@ type ControlledInputProps<
 > = {
   name: TName;
   control: Control<TFieldValues>;
-  rules: ControllerProps<TFieldValues>["rules"];
+  rules?: ControllerProps<TFieldValues>["rules"];
 } & Omit<
   DropdownMenuProps<ArrayElement<PathValue<TFieldValues, TName>>>,
   "value" | "onChange"

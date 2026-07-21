@@ -17,6 +17,12 @@ const SETTINGS_SECTION = [
     iconName: "web",
     path: "/settings/connection",
   },
+  {
+    title: "Latency",
+    description: "Configure engine latency",
+    iconName: "speedometer",
+    path: "/settings/latency",
+  },
 ];
 
 const SettingsScreen = () => {

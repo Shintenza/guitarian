@@ -127,6 +127,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   controlsBox: {
     position: "absolute",
+    zIndex: 2,
     right: 8,
     bottom: 10,
   },

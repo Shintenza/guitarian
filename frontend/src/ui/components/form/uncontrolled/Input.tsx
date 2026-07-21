@@ -9,6 +9,7 @@ export type InputProps = {
   description?: string;
   error?: string;
   containerStyle?: ViewStyle;
+  disabled?: boolean;
   onChange?: (value: string) => void;
 } & Omit<TextInputProps, "onChange">;
 
@@ -16,6 +17,7 @@ const Input = ({
   value,
   label,
   containerStyle,
+  disabled,
   description,
   error,
   onChange,
@@ -35,9 +37,10 @@ const Input = ({
 
       <View>
         <TextInput
+          editable={!disabled}
           value={value}
           onChangeText={onChange}
-          style={styles.input}
+          style={styles.input({ disabled })}
           cursorColor={theme.colors.orange}
           placeholderTextColor={theme.colors.text.muted}
           {...rest}
@@ -56,14 +59,14 @@ const styles = StyleSheet.create((theme) => ({
   container: {
     gap: 8,
   },
-  input: {
+  input: ({ disabled }: { disabled?: boolean }) => ({
     fontFamily: fonts.InterRegular,
-    borderColor: theme.colors.orange,
+    borderColor: disabled ? theme.colors.border : theme.colors.orange,
     borderWidth: 2,
     borderRadius: 8,
     paddingHorizontal: 12,
-    color: theme.colors.text.primary,
-  },
+    color: disabled ? theme.colors.text.secondary : theme.colors.text.primary,
+  }),
 }));
 
 export default Input;

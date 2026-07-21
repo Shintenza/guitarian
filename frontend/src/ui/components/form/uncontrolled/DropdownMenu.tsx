@@ -8,9 +8,11 @@ import { Text } from "../../text";
 
 export type DropdownMenuProps<T> = {
   multiple?: boolean;
+  label?: string;
+  description?: string;
   data: Option<T>[];
   value: T;
-  zIndex: number;
+  zIndex?: number;
   error?: string;
   onChange: (value: T) => void;
 };
@@ -18,6 +20,8 @@ export type DropdownMenuProps<T> = {
 const DropdownMenu = <T,>({
   zIndex,
   multiple = false,
+  label,
+  description,
   data,
   value,
   error,
@@ -42,6 +46,14 @@ const DropdownMenu = <T,>({
 
   return (
     <View style={styles.container}>
+      <View>
+        {label && <Text>{label}</Text>}
+        {description && (
+          <Text size="XS" color={theme.colors.text.secondary}>
+            {description}
+          </Text>
+        )}
+      </View>
       <DropDownPicker
         zIndex={zIndex}
         multiple={multiple}
@@ -79,7 +91,7 @@ const DropdownMenu = <T,>({
 
 const styles = StyleSheet.create((theme) => ({
   container: {
-    gap: 2,
+    gap: 6,
   },
   mainStyle: {
     borderWidth: 0,

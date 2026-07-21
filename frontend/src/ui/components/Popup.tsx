@@ -1,8 +1,9 @@
 import { ReactNode, Ref, useImperativeHandle, useState } from "react";
-import { Keyboard, Modal, Pressable, ViewStyle } from "react-native";
+import { Keyboard, Modal, Pressable, View, ViewStyle } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { StyleSheet } from "react-native-unistyles";
 import ConditionalWrapper from "./ConditionalWrapper";
+import IconButton from "./IconButton";
 
 export type PopupRef = {
   open: () => void;
@@ -15,6 +16,8 @@ export type PopupProps = {
   style?: ViewStyle;
   closeOnBackdropPress?: boolean;
   avoidKeyboard?: boolean;
+  withOverlay?: boolean;
+  withCloseButton?: boolean;
   onDismiss?: () => void;
 };
 
@@ -24,6 +27,7 @@ const ConfirmationPopup = ({
   style,
   closeOnBackdropPress = false,
   avoidKeyboard = true,
+  withOverlay = false,
   onDismiss,
 }: PopupProps) => {
   const [isOpened, setIsOpened] = useState(false);
@@ -49,6 +53,7 @@ const ConfirmationPopup = ({
       animationType="fade"
     >
       <Pressable style={styles.centered} onPress={handleDismiss}>
+        {withOverlay && <View style={styles.overlay} />}
         <ConditionalWrapper
           enabled={avoidKeyboard}
           wrapper={KeyboardAvoidingView}
@@ -58,6 +63,15 @@ const ConfirmationPopup = ({
             style={[styles.container, style]}
             onPress={Keyboard.dismiss}
           >
+            <View style={styles.closeButtonContainer}>
+              <IconButton
+                iconName="close"
+                backgroundColor="transparent"
+                onPress={() => {
+                  setIsOpened(false);
+                }}
+              />
+            </View>
             {children}
           </Pressable>
         </ConditionalWrapper>
@@ -71,6 +85,17 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  overlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "black",
+    opacity: 0.6,
+  },
+  closeButtonContainer: {
+    position: "absolute",
+    right: 16,
+    top: 16,
+    zIndex: 2,
   },
   container: {
     padding: 24,
