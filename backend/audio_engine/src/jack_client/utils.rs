@@ -1,60 +1,10 @@
-use std::{
-  collections::HashSet,
-  fs::{self, File},
-  io::Write,
-};
+use std::collections::HashSet;
 
 use anyhow::Result;
 use jack::{Client, Error};
-use shared::utils::app_data::get_connections_state_location;
+use shared::data::BufferSize;
 
-use crate::jack_client::types::{ConnectionsState, EnginePortsNames};
-
-pub fn save_connections_state(state: &ConnectionsState) {
-  let file_location = get_connections_state_location();
-  if let Ok(json) = serde_json::to_string_pretty(state) {
-    if let Ok(mut file) = File::create(file_location) {
-      let _ = file.write_all(json.as_bytes());
-    }
-  }
-}
-pub fn load_saved_connections_state() -> Option<ConnectionsState> {
-  let config_path = get_connections_state_location();
-  let json_content = fs::read_to_string(config_path).ok()?;
-  let state: ConnectionsState = serde_json::from_str(&json_content).ok()?;
-
-  Some(state)
-}
-
-pub fn handle_initial_ports_connections(
-  client: &Client,
-  engine_ports: &EnginePortsNames,
-  connections_state: &ConnectionsState,
-) -> Result<(), Error> {
-  for out_port in &connections_state.connected_to_input {
-    client.connect_ports_by_name(&out_port, &engine_ports.input)?;
-  }
-
-  let input_ports_l = connections_state
-    .connected_to_output_l
-    .iter()
-    .collect::<Vec<_>>();
-
-  let input_ports_r = connections_state
-    .connected_to_output_r
-    .iter()
-    .collect::<Vec<_>>();
-
-  for in_port in input_ports_l {
-    client.connect_ports_by_name(&engine_ports.output_l, &in_port)?;
-  }
-
-  for in_port in input_ports_r {
-    client.connect_ports_by_name(&engine_ports.output_r, &in_port)?;
-  }
-
-  Ok(())
-}
+use crate::jack_client::{engine_settings::EngineSettings, types::EnginePortsNames};
 
 pub fn calculate_port_diff(
   current: &HashSet<String>,
@@ -90,4 +40,38 @@ pub fn apply_port_changes(
   }
 
   Ok(())
+}
+
+pub fn sync_engine_settings_with_client(
+  engine_settings: &mut EngineSettings,
+  client: &Client,
+  engine_ports: &EnginePortsNames,
+) {
+  if let Err(_) = client.set_buffer_size(engine_settings.buffer_size as u32) {
+    let default_buffer_size = BufferSize::default();
+    client.set_buffer_size(default_buffer_size as u32).unwrap();
+    engine_settings.buffer_size = default_buffer_size;
+  }
+
+  if let Some(out_port) = &engine_settings.connections_state.connected_to_input {
+    if let Err(_) = client.connect_ports_by_name(&out_port, &engine_ports.input) {
+      engine_settings.connections_state.connected_to_input = None;
+    }
+  }
+
+  let wire_inputs = |ports_set: &mut HashSet<String>, engine_port: &String| {
+    ports_set.retain(|port_name| client.connect_ports_by_name(engine_port, port_name).is_ok());
+  };
+
+  wire_inputs(
+    &mut engine_settings.connections_state.connected_to_output_l,
+    &engine_ports.output_l,
+  );
+
+  wire_inputs(
+    &mut engine_settings.connections_state.connected_to_output_r,
+    &engine_ports.output_r,
+  );
+
+  let _ = engine_settings.save();
 }

@@ -1,20 +1,20 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 use jack::{Client, Control, Port, Unowned};
 
-use crate::jack_client::{
-  types::{ConnectionsState, EnginePortsNames},
-  utils::save_connections_state,
-};
+use crate::jack_client::{engine_settings::EngineSettings, types::EnginePortsNames};
 
 pub struct NotificationHandler {
-  state: Arc<Mutex<ConnectionsState>>,
+  engine_settings: Arc<RwLock<EngineSettings>>,
   port_names: EnginePortsNames,
 }
 
 impl NotificationHandler {
-  pub fn new(port_names: EnginePortsNames, state: Arc<Mutex<ConnectionsState>>) -> Self {
-    Self { port_names, state }
+  pub fn new(port_names: EnginePortsNames, engine_settings: Arc<RwLock<EngineSettings>>) -> Self {
+    Self {
+      port_names,
+      engine_settings,
+    }
   }
 }
 
@@ -41,28 +41,40 @@ impl jack::NotificationHandler for NotificationHandler {
       return;
     }
 
-    if let Some(mut locked_state) = self.state.lock().ok() {
+    if let Some(mut locked_settings) = self.engine_settings.write().ok() {
       let mut update_set = |our_port: &Port<Unowned>, other_port: &Port<Unowned>| {
         let our_name = our_port.name().unwrap_or_default();
         let other_name = other_port.name().unwrap_or_default();
 
         if our_name == self.port_names.input {
           if are_connected {
-            locked_state.connected_to_input = Some(other_name);
+            locked_settings.connections_state.connected_to_input = Some(other_name);
           } else {
-            locked_state.connected_to_input = None
+            locked_settings.connections_state.connected_to_input = None
           }
         } else if our_name == self.port_names.output_l {
           if are_connected {
-            locked_state.connected_to_output_l.insert(other_name);
+            locked_settings
+              .connections_state
+              .connected_to_output_l
+              .insert(other_name);
           } else {
-            locked_state.connected_to_output_l.remove(&other_name);
+            locked_settings
+              .connections_state
+              .connected_to_output_l
+              .remove(&other_name);
           }
         } else if our_name == self.port_names.output_r {
           if are_connected {
-            locked_state.connected_to_output_r.insert(other_name);
+            locked_settings
+              .connections_state
+              .connected_to_output_r
+              .insert(other_name);
           } else {
-            locked_state.connected_to_output_r.remove(&other_name);
+            locked_settings
+              .connections_state
+              .connected_to_output_r
+              .remove(&other_name);
           }
         }
       };
@@ -73,7 +85,7 @@ impl jack::NotificationHandler for NotificationHandler {
         update_set(&port_b, &port_a);
       }
 
-      save_connections_state(&locked_state);
+      let _ = locked_settings.save();
     }
   }
 

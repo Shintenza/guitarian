@@ -3,6 +3,7 @@ use std::{fs, path::PathBuf};
 const DB_LOCATION: &str = "db/db.sqlite";
 const CONNECTIONS_STATE: &str = "state/connections.json";
 const CHAIN_DUMP: &str = "state/chain.json";
+const PERSISTED_SETTING: &str = "state/settings.json";
 
 fn get_app_data_dir() -> PathBuf {
   let home_dir = std::env::var("HOME").unwrap_or_else(|_| "/root".to_owned());
@@ -25,6 +26,10 @@ pub fn get_location(location: &str) -> PathBuf {
     }
   }
   path
+}
+
+pub fn get_engine_settings_location() -> PathBuf {
+  get_location(PERSISTED_SETTING)
 }
 
 pub fn get_connections_state_location() -> PathBuf {

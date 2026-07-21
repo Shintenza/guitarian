@@ -1,7 +1,7 @@
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use strum::{EnumIter, EnumString, IntoEnumIterator};
+use strum::{EnumIter, EnumString, FromRepr};
 
 #[derive(Decode, Encode, Serialize, Deserialize)]
 pub enum ControlType {
@@ -111,13 +111,24 @@ pub struct EngineConfig {
 }
 
 #[derive(
-  Clone, Copy, PartialEq, Eq, Serialize_repr, Deserialize_repr, EnumIter, Encode, Decode,
+  Clone,
+  Copy,
+  PartialEq,
+  Eq,
+  Serialize_repr,
+  Deserialize_repr,
+  EnumIter,
+  Encode,
+  Decode,
+  Default,
+  FromRepr,
 )]
 #[repr(u32)]
 pub enum BufferSize {
   Frames64 = 64,
   Frames128 = 128,
   Frames256 = 256,
+  #[default]
   Frames512 = 512,
   Frames1024 = 1024,
   Frames2048 = 2048,

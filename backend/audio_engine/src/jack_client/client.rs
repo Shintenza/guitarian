@@ -3,20 +3,20 @@ use jack::{AsyncClient, AudioIn, AudioOut, Client, ClientOptions, PortFlags};
 use ringbuf::HeapCons;
 use shared::data::{BufferSize, EngineConfig};
 use std::env;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 use crate::jack_client::audio_processor::AudioProcessor;
+use crate::jack_client::engine_settings::EngineSettings;
 use crate::jack_client::notification_handler::NotificationHandler;
 use crate::jack_client::types::{ConnectionsState, EnginePortsNames};
 use crate::jack_client::utils::{
-  apply_port_changes, calculate_port_diff, handle_initial_ports_connections,
-  load_saved_connections_state,
+  apply_port_changes, calculate_port_diff, sync_engine_settings_with_client,
 };
 use crate::plugin_manager::types::AudioCommand;
 use crate::utils::ports::{PortType, extract_unique_ports};
 
 pub struct AudioEngine {
-  connections_state: Arc<Mutex<ConnectionsState>>,
+  engine_settings: Arc<RwLock<EngineSettings>>,
   ports_names: EnginePortsNames,
   async_client: AsyncClient<NotificationHandler, AudioProcessor>,
 }
@@ -57,19 +57,20 @@ impl AudioEngine {
       client.buffer_size() as usize,
     );
 
-    let state = load_saved_connections_state().unwrap_or_default();
+    let mut engine_settings = EngineSettings::load();
+    sync_engine_settings_with_client(&mut engine_settings, &client, &ports_names);
 
-    let _ = handle_initial_ports_connections(&client, &ports_names, &state);
-    let guarded_state = Arc::new(Mutex::new(state));
+    let guarded_engine_settings = Arc::new(RwLock::new(engine_settings));
 
-    let notification_handler = NotificationHandler::new(ports_names.clone(), guarded_state.clone());
+    let notification_handler =
+      NotificationHandler::new(ports_names.clone(), guarded_engine_settings.clone());
 
     let async_client = client
       .activate_async(notification_handler, processor)
       .unwrap();
 
     Self {
-      connections_state: guarded_state,
+      engine_settings: guarded_engine_settings,
       ports_names,
       async_client: async_client,
     }
@@ -114,8 +115,8 @@ impl AudioEngine {
   }
 
   pub fn get_current_connections_state(&self) -> Result<ConnectionsState> {
-    let state = self.connections_state.lock().unwrap();
-    return Ok(state.clone());
+    let read_guard = self.engine_settings.read().unwrap();
+    return Ok(read_guard.connections_state.clone());
   }
 
   pub fn set_audio_connections(
@@ -147,7 +148,8 @@ impl AudioEngine {
     }
 
     let (needs_input_change, add_l, rem_l, add_r, rem_r) = {
-      let state = self.connections_state.lock().unwrap();
+      let read_guard = self.engine_settings.read().unwrap();
+      let state = &read_guard.connections_state;
 
       let needs_input = match &state.connected_to_input {
         Some(current) => *current != audio_source_port,
@@ -188,6 +190,10 @@ impl AudioEngine {
       .async_client
       .as_client()
       .set_buffer_size(buffer_size as u32)?;
+
+    let mut write_guard = self.engine_settings.write().unwrap();
+    write_guard.modify_and_save(|s| s.buffer_size = buffer_size)?;
+
     Ok(())
   }
 }
