@@ -1,0 +1,199 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[
+    a4paper,
+    left=3.5cm,    % 2.5 cm standard + 1 cm na bindowanie
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm
+]{geometry}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[polish]{babel}
+
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage[backend=biber,style=numeric]{biblatex}
+\addbibresource{bibliography.bib}
+
+\begin{document}
+
+% -----------------------
+% Strona tytułowa 
+% -----------------------
+\begin{titlepage}
+    \centering
+    {\Large\bfseries Uniwersytet Jagielloński w Krakowie\par}
+    \vspace{0.5cm}
+    {\large Wydział Fizyki, Astronomii i Informatyki Stosowanej\par}
+    
+    \vspace{4cm}
+    
+    {\Large Kamil Kuziora\par}
+    \vspace{0.2cm}
+    Nr albumu: 1186631\par
+    
+    \vspace{1.5cm}
+    {\huge\bfseries System efektów gitarowych w standardzie LV2 do przetwarzania sygnału w czasie rzeczywistym z mobilnym interfejsem użytkownika\par}
+    \vspace{1cm}
+    {\large Praca magisterska\par}
+    {\large Na kierunku: Informatyka Stosowana\par}
+    
+    \vfill
+    
+    \begin{flushright}
+        \begin{minipage}{0.45\textwidth}
+            Praca wykonana pod kierunkiem\\
+            \textbf{Dr Hab. Tomasza Urbańczyka}\\
+            Wydział Fizyki, Astronomii i Informatyki Stosowanej
+        \end{minipage}
+    \end{flushright}
+    
+    \vfill
+    
+    {\large Kraków, \the\year\par} 
+\end{titlepage}
+
+\newpage
+
+% -----------------------
+% Strona z oświadczeniami
+% -----------------------
+{\noindent\Large\bfseries Oświadczenie kierującego pracą\par}
+\vspace{0.8cm}
+
+\indent Potwierdzam, że niniejsza praca została przygotowana pod moim kierunkiem i kwalifikuje się do przedstawienia jej w postępowaniu o nadanie tytułu zawodowego.
+
+\vspace{2cm}
+\noindent Data \hfill Podpis kierującego pracą\hspace*{1cm} % hspace na końcu odsuwa lekko podpis od samej krawędzi
+
+\vspace{3cm}
+
+{\noindent\Large\bfseries Oświadczenie autora (autorów) pracy\par}
+\vspace{0.8cm}
+
+\indent Świadom odpowiedzialności prawnej oświadczam, że niniejsza praca dyplomowa została napisana przeze mnie samodzielnie i nie zawiera treści uzyskanych w sposób niezgodny z obowiązującymi przepisami.
+
+Oświadczam również, że przedstawiona praca nie była wcześniej przedmiotem procedur związanych z uzyskaniem tytułu zawodowego w wyższej uczelni.
+
+Oświadczam ponadto, że niniejsza wersja pracy jest identyczna z załączoną wersją elektroniczną.
+
+\vspace{2cm}
+\noindent Data \hfill Podpis autora pracy\hspace*{1cm}
+
+\newpage 
+
+\tableofcontents
+\newpage
+
+
+\chapter*{Wprowadzenie}
+Rozwój technologi cyfrowych w znaczącym stopniu wpłynął na sposoby kreaowania brzmienia gitary elektrycznej, stopniowo powodując zastępowanie fizycznych urządzeń ich cyfrowymi odpowiednikami. Ninejsza praca skupia się na omówieniu autorskiego systemu do zarządzania cyfrowymi efektami gitarowymi, który został zaprojektowany specjalnie z myślą o minikomputerach jednopłytkowych pozbawionych własnego ekranu, takich jak Raspberry Pi. Głównym celem tego systemu było stworzenie kompletnego rozwiązania dla gitarzystów, które jest jednocześnie proste w obsłudze, wydajne i przede wszystkim praktyczne w kreowaniu końcowego brzmienia instrumentu. 
+
+Dalsza część pracy krok po kroku wprowadza w techniczne i praktyczne aspekty projektu. W pierwszej kolejności omówiono pojęcia teoretyczne niezbędne do pełnego zrozumienia działania systemu. Następnie przeanalizowano jego architekturę oraz mechanizmy komunikacji między poszczególnymi komponentami. W kolejnych rozdziałach przybliżono szczegóły implementacyjne wraz z uzasadnieniem wyboru konkretnych technologii. Zwieńczeniem pracy jest opis wstępnej konfiguracji środowiska oraz prezentacja rzeczywistych scenariuszy użycia stworzonego oprogramowania.
+
+\chapter{Wprowadzenie teoretyczne}
+\section{Działanie gitary elektrycznej}
+Widoczna na Rysunku \ref{fig:guitar} gitara elektryczna pod względem konstrukcji znacząco różni się od gitar akustycznych oraz klasycznych. Ze względu na brak pudła rezonansowego, instrument ten nie potrafi samodzielnie wzmocnić drgań, ograniczając się jedynie do cichego wybrzmiewania szarpanych strun.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{electric_guitar.png}
+    \caption{Gitara elektryczna marki ESP\cite{electric_guitar}}
+    \label{fig:guitar}
+\end{figure}
+
+Cechą charakterystyczną gitary elektrycznej jest generowanie sygnału elektrycznego, który musi zostać poddany wzmocnieniu i przetworzeniu, aby za pośrednictwem głośnika ulec konwersji na słyszalną falę akustyczną.
+
+Sygnał elektryczny w gitarze powstaje dzięki wykorzystaniu przetworników i opiera się na zjawisku indukcji elektromagnetycznej. Przetwornik składa się z jednego lub kilku magnesów otoczonych cewką nawiniętą z cienkiego, miedzianego drutu, co tworzy stałe pole magnetyczne tuż pod strunami. Kiedy stalowa (ferromagnetyczna) struna zostaje wprawiona w drgania, jej ruch zaburza to pole magnetyczne. Te zmiany indukują w cewce napięcie co powoduje powstanie słabego sygnału elektrycznego, którego częstotliwość i amplituda wiernie odzwierciedlają fizyczny ruch struny\cite{guitar_physics}\cite{guitar_pickup}. Sygnał ten następnie jest doprowadzany za pomocą kabla (lub rozwiązań bezprzewodowych) do wzmacniacza lub interfejsu audio.
+
+\section{Sposoby nagłośnienia}
+Surowy sygnał pochodzący prosto z gitary elektrycznej jest za słaby aby móc samodzielnie wybrzmieć na kolumnach głośnikowych. Do tego potrzebne jest zastosowanie wcześniej wspomnianego wzmacniacza, który jest urządzeniem, które w klasycznej postaci składa się z 3 podstawowych komponentów: przedwzmacniacza, końcówki mocy i kolumny głosnikowej. Urządzenie to widoczne jest na Rysunku \ref{fig:amp}.
+\begin{figure}[htbp]
+    \centering
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{amp.jpg}
+        \caption{Wzmacniacz gitarowy typu \textit{combo}\cite{amp}}
+        \label{fig:amp}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{audio_interface.png}
+        \caption{Interfejs audio\cite{audio_interface}}
+        \label{fig:audio_interface}
+    \end{minipage}
+\end{figure}
+
+Każdy z wymienionych wcześniej komponentów ma swoje własne zadanie. Przedwzmacniacz odbiera słaby sygnał, filtruje sygnał reguljąc przy tym niskie, średnie i wysokie tony, a także kształtuje główny charakter brzmienia. Kolejnym komponentem na drodze sygnału jest końcówka mocy, która przyjmuje sygnał charakteryzujący się odpowiednią barwą i napięciem, ale nie ma wystarczającej mocy do poruszenia membranami. Rozwiązaniem tego właśnie problemu zajmuje się ten komponent. Może mieć również wpływ na końcowe brzmienie co jest szczególnie widoczne w konstrukcjach lampowych. Finalną częścią są głośniki, których głównym zadaniem jest zamiana sygnału elektrycznego na fale akustyczne.
+
+Alternatywne podejście w nagłośnianiu gitary elektrycznej zakłada użycie interfejsu audio widocznego na Rysunku \ref{fig:audio_interface} i konwersję sygnału do postaci cyfrowej. To podejście zostanie w pełni opisane w dalszej części tego dokumentu.
+
+\section{Efekty gitarowe}
+Sygnał uzyskany za pomocą opisanych dotychczas komponentów często okazuje się niewystarczający do realizacji określonych założeń artystycznych. Poszczególne gatunki muzyczne wymagają odmiennej charakterystyki barwowej, a sami instrumentaliści dążą do wykreowania własnego, unikalnego brzmienia. Odpowiedzią na tę potrzebę różnorodności jest zastosowanie efektów gitarowych. 
+
+Klasyczny, sprzętowy efekt gitarowy to z reguły niewielkie urządzenie elektroniczne, którego głównym elementem jest analogowy lub cyfrowy układ przetwarzający. Zewnętrzny interfejs urządzenia składa się z gniazd wejściowych i wyjściowych oraz zestawu potencjometrów i przełączników, służących do konfiguracji parametrów jego pracy. Pojedyncze efekty są najczęściej łączone szeregowo, tworząc w ten sposób rozbudowany łańcuch przetwarzania sygnału, który z ang. powszechnie jest określany jako \textit{pedalboard} (Rysunek \ref{fig:pedal_board}).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{pedal_board.jpg}
+    \caption{Przykładowy \textit{pedalboard}\cite{pedalboard}}
+    \label{fig:pedal_board}
+\end{figure}
+\subsection{Rodzaje efektów gitarowych}
+Wyróżnia się kilka głównych kategori efektów gitarowych\cite{guitar_peadl_types}:
+
+\begin{enumerate}
+    \item \textbf{Przestery} (ang. \textit{Distortion}) -- jedna z najpopularniejszych kategorii efektów gitarowych. Ich działanie polega na znacznym wzmocnieniu sygnału do poziomu, przy którym układ przestaje być w stanie przetworzyć go w sposób liniowy. Prowadzi to do obcinania szczytów sygnału, określanego w języku angielskim jako \textit{clipping}. Proces ten wprowadza dodatkowe składowe harmoniczne, zmieniając brzmienie sygnału w charakterystyczny sposób. Przestery gitarowe są szczególnie charakterystyczne dla takich gatunków muzycznych jak rock i metal \cite{distortion}.
+    \item \textbf{Efekty modulacyjne}
+    \begin{enumerate}
+        \item \textit{Chorus} -- efekt, który przyjmuje sygnał wejściowy, a następnie miksuje go z jedną lub kilkoma kopiami tego sygnału opóźnionymi w czasie.
+        \item \textit{Tremolo} -- efekt polegający na okresowej zmianie amplitudy sygnału, co przekłada się na jego regularne ściszanie i pogłaśnianie.
+        \item \textit{Phaser} -- efekt, w którym sygnał jest rozdzielany na osobne ścieżki. Jedna z nich pozostaje niezmieniona, podczas gdy druga przechodzi przez serię filtrów powodujących przesunięcia fazowe zależne od częstotliwości. W wyniku interferencji obu sygnałów powstają okresowe wzmocnienia i osłabienia wybranych zakresów częstotliwości, co nadaje brzmieniu charakterystyczny, \textit{wirujący} i \textit{przestrzenny} charakter.
+    \end{enumerate}
+    \item \textbf{Efekty przestrzenne i czasowe}
+    \begin{enumerate}
+        \item \textit{Delay} -- zapisuje sygnał w buforze i odtwarza go po określonym czasie, często stosuje się również sprzężenie zwrotne, które powoduje serię coraz cichszych powtórzeń. Działa podobnie do echa
+        \item \textit{Reverb} -- również opiera się na opóźnionych kopiach sygnału, ale jest znacznie bardziej zaawansowany niż \textit{deleay}. Pozwala na symulowanie wybrzmiewania dźwięku w różnych zamkniętych pomieszczeniach
+    \end{enumerate}
+    \item \textbf{Efekty filtrujące i moddyfikujące częstotliwość}
+    \begin{enumerate}
+        \item \textit{Korektor barwy (EQ)} -- pozwala na uwidocznienie lub wycięcie konkrentych pasm częstotliwości
+        \item \textit{Pitch shifer} -- przesuwa cały sygnał o zadany interwał muzyczny w górę lub w dół (np. pozwala osiągnąć dźwięk o oktawę niższy)
+    \end{enumerate}
+    \item \textbf{Efekty dynamiczne}
+    \begin{enumerate}
+        \item \textit{Kompresor} -- zmienjsza rozpiętość dynamiczną przez ściszanie najgłośniejszych dźwięków i podbijanie cichszych, co powoduje wyrównanie dźwięku i wydłużenie wybrzmiewania struny (z ang. \textit{sustain})
+        \item \textit{Bramka szumów} -- odcina sygnał wejściowy gdy ten spada poniżej ustalonego progu. Skuteczny w redukcji niepożądanych szumów i dźwięków w momencie gdy muzyk nie gra na instrumencie
+    \end{enumerate}
+\end{enumerate}
+
+\section{Cyfrowe odpowiedniki efektów gitarowych}
+Cyfrowym odpowiednikiem efektów gitarowych są wtyczki audio\cite{audio_effects}, które są programami komputerowymi, które otrzymują na wejściu sygnał dźwiękowy w postaci cyfrowej, przetwarzają go, a następnie wysyłają go na wyjście. Podobnie, jak ich fizyczne odpowiedniki, wtyczki audio pozwalają na modyfikowanie parametrów, z jakimi przetwarzany jest dźwięk. 
+
+Wtyczki audio do poprawnego działania wymagją dostarczenia im jednego lub więcej kanałów wejściowych i wyjściowych, przez które mogą przepływać próbki dźwiękowe o rozmiarze wspieranym przez daną wtyczkę. Dodatkowo część wtyczek udostępnia zintegrowany interfejs użytkownika, który służy do kontrolowania działania wtyczki. Z racji na chareker efektów gitarowych jako części składowych łańcucha efektów, a nie samodzielnego bytu, wtyczki potrzebują zewnętrznego programu do zarządzania nimi.
+
+
+\subsection{Zarządzanie wtyczkami audio}
+Środowiskiem uruchomieniowym dla wtyczek audio jest aplikacja nadrzędna, określana mianem programu-hosta. Pełni ona pełną kontrolę nad cyklem życia wtyczki: od jej wyszukania i załadowania do pamięci, aż po inicjalizację. Sam proces inicjalizacji polega na przekazaniu wtyczce niezbędnych parametrów środowiskowych, takich jak rozmiar bufora i częstotliwość próbkowania, oraz dostarczeniu wskaźników do wejściowych i wyjściowych buforów audio. Ponadto zaawansowany host odpowiada za routing sygnału - umożliwia łączenie wielu wtyczek w szeregowy łańcuch przetwarzania oraz swobodną modyfikację ich kolejności. Oprogramowanie to często zajmuje się również renderowaniem interfejsów graficznych wtyczek (GUI) oraz pozwala użytkownikowi na zarządzanie całkowitymi opóźnieniami systemu poprzez zmianę rozmiaru bufora. Współpraca programów hostujących z niezależnymi wtyczkami jest możliwa dzięki zastosowaniu ujednoliconych standardów API, które ściśle definiują protokół komunikacji pomiędzy obydwoma komponentami.
+
+
+\subsection{Standardy wtyczek audio}
+Współczesny rynek oprogramowania muzycznego charakteryzuje się mnogością formatów wtyczek audio. Najbardziej rozpowszechnionym z nich jest VST (ang. Virtual Studio Technology), opracowany przez niemiecką firmę \textit{Steinberg Media Technologies}. Choć format ten uznawany jest za niekwestionowany standard branżowy, jest to rozwiązanie własnościowe. Konkurencyjnym, lecz zamkniętym na jeden ekosystem standardem jest Audio Units (AU) firmy Apple, przeznaczony wyłącznie dla systemów macOS oraz iOS. Z punktu widzenia urządzeń, takich jak Raspberry Pi, oraz środowisk opartych na jądrze Linux, kluczowe znaczenie mają jednak otwarte alternatywy (open-source). Należą do nich historyczny format LADSPA, jego nowoczesny następca LV2, a także zyskujący na popularności format CLAP.
+
+
+\subsection{Standard LV2}
+Standard LV2\cite{lv2_website}\cite{lv2_wikipedia} (LADSPA Version 2) stanowi ewolucyjne rozwinięcie historycznego już interfejsu LADSPA (ang. \textit{Linux Audio Developer's Simple Plugin API}). Jest to wieloplatformowy i w pełni otwarty standard wtyczek audio, którego architekturę oparto na mechanizmie rozszerzeń (ang. \textit{extensions}). Takie podejście pozwala programistom na elastyczne implementowanie nowych, zaawansowanych funkcjonalności. Rozszerzenia, które zyskają aprobatę społeczności i okażą się uniwersalnie użyteczne, mogą zostać oficjalnie włączone do rdzennej specyfikacji standardu.
+
+Kluczową zaletą formatu LV2 jest ścisłe odseparowanie warstwy cyfrowego przetwarzania sygnału (DSP) od interfejsu użytkownika (GUI). Taki podział nie tylko pozytywnie wpływa na wydajność obliczeniową, ale przede wszystkim umożliwia zdalne sterowanie parametrami wtyczek. Z punktu widzenia projektowanego systemu jest to cecha fundamentalna. Zgodnie z założeniami specyfikacji, wtyczki mogą opcjonalnie dostarczać własny interfejs graficzny dla programów-hostów, jednak nie jest to warunek konieczny do ich funkcjonowania.
+
+Kolejnym wyróżnikiem LV2 jest przeniesienie metadanych opisujących wtyczkę do zewnętrznych plików tekstowych w formacie \textit{Turtle} (TTL). Pliki te, wykorzystujące struktury danych oparte na trójkach standardu RDF\cite{rdf}, w sposób precyzyjny i ustandaryzowany opisują architekturę wtyczki. Definiują one między innymi wszystkie porty wejściowe i wyjściowe, dostępne parametry (wraz z ich typami i dopuszczalnymi zakresami wartości), a także informacje kategoryzacyjne, takie jak klasa wtyczki, nazwa oraz dane autora. Zastosowanie semantycznego standardu RDF wymusza ścisłe reguły zapisu, co gwarantuje spójność i maszynową czytelność metadanych przez programy hostujące.
+
+Zestawienie tych cech – otwartej architektury, izolacji logiki od interfejsu oraz ustandaryzowanego opisu parametrów – czyni LV2 formatem wyjątkowo atrakcyjnym dla systemów wbudowanych (tzw. \textit{headless}). Format ten idealnie sprawdza się w rozwiązaniach, w których warstwa prezentacji została wydzielona do niezależnej aplikacji (np. mobilnej), komunikującej się z silnikiem audio za pośrednictwem sieci lokalnej lub protokołu Bluetooth.
+
+
+\printbibliography
+
+\end{document}
