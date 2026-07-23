@@ -193,6 +193,85 @@ Kolejnym wyróżnikiem LV2 jest przeniesienie metadanych opisujących wtyczkę d
 
 Zestawienie tych cech – otwartej architektury, izolacji logiki od interfejsu oraz ustandaryzowanego opisu parametrów – czyni LV2 formatem wyjątkowo atrakcyjnym dla systemów wbudowanych (tzw. \textit{headless}). Format ten idealnie sprawdza się w rozwiązaniach, w których warstwa prezentacji została wydzielona do niezależnej aplikacji (np. mobilnej), komunikującej się z silnikiem audio za pośrednictwem sieci lokalnej lub protokołu Bluetooth.
 
+\chapter{Przetwarzanie sygnału dźwiękowego w czasie rzeczywistym}
+
+\section{Od sygnału analogowego do domeny cyfrowej}
+
+Gitara elektryczna generuje sygnał, który jest sygnałem ciągłym. Aby urządzenie cyfrowego mogło poddać go analizie, sygnał ten musi zostać przetłumaczony na postać dyskretną (cyfrową). Urządzeniem odpowiedzialnym za ten proces jes interfejs audio ukazany na Rysunku \ref{fig:audio_interface}, którego kluczowym komponentem jest przetwornik analogowo-cyfrowy ADC (z ang. \textit{Analog-to-Digital Converter}). Całą drogę sygnału obrazuje Rysunek \ref{fig:audio_path}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{audio_path.png}
+    \caption{Droga sygnału w przetwarzaniu cyfrowym\cite{guide_to_dsp}}
+    \label{fig:audio_path}
+\end{figure}
+
+W przypadku gitary elektrycznej, zanim sygnał trafi do filtra i przetwornika ADC, musi przejść jeszcze przez sprzętowy przedwzmacniacz instrumentalny. Wynika to z faktu, że sygnał pochodzący z gitary jest słaby
+
+\subsection{Próbkowanie w czasie (\textit{sampling})}
+\textit{Sampling} jest kluczowym procesem w konwersji sygnału z postaci analogowej do cyfrowej. Polega na cyklicznym pobieraniu i zapisywaniu chwilowych wartości napięcia sygnału analogowego w ściśle okreśonych, równych odstępach czasowych. Istotnym parametrem jest tutaj częstotliwość próbkowania (z ang. \textit{Sampling Rate}), który jest wyrażany w $Hz$ i określa ile takich próbek jest popbranych w trakcie jednej sekundy.
+
+Aby cyfrowa reprezentacja sygnału była wierna i umożliwiała jego idealne odtworzenie, częstotliwość próbkowania systemu $f_s$ zgodnie z twierdzeniem \textit{Nyquista-Shannona} musi spełniać poniższy warunek \ref{eq:nyquist}. 
+
+\begin{equation}
+    f_s \geq 2f_{\max}
+    \label{eq:nyquist}
+\end{equation}
+
+$f_{\max}$ odnosi się w powyższym wzorze do maksymalnej wartości częstotliwości próbkowanego sygnału. Warto na tym etapie wprowadzić również pojęcie częstotliwości Nyquista $f_N$, która będzie górną granicą akceptowanych częstotliwości:
+
+\begin{equation}
+    f_N = frac{f_s}{2}
+    \label{eq:nyquist_freq}
+\end{equation}
+
+
+Gdy ta reguła nie jest spełniona dochodzi do zjawiska określanego jako \textit{aliasing}. Można je zdefiniować jako krytyczny błąd dyskretyzacji, prowadzący do nieodwracalnej utraty integralności widma częstotliwościowego sygnału. Zjawisko to mocno uwidacznia się na wykresie z Rysunku \ref{fig:aliasing} - widoczna ciągła linia odpowiada sygnałowi w postaci analogowej, a punkty oznaczają moment w czasie gdzie została pobrana próbka. Pobrane wartości nijak mają się do prawdziwego przebiegu sygnału.
+
+Górna granica słyszanych przez człowieka dźwięków kończy się przeważnie w okolicy $20kHz$. Z tego też powodu dla prawidłowej reprezentacji dźwięku powinniśmy wykorzystywać częstotliwość próbkowania powyżej $40kHz$ co wynikia ze wzoru \ref{eq:nyquist}. W praktyce najczęściej w cyfrowym przetwarzaniu dźwięku wykorzytujemy częstotliwość $48kHz$.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{aliasing.png}
+    \caption{Przykład \textit{aliasingu}\cite{guide_to_dsp}}
+    \label{fig:aliasing}
+\end{figure}
+
+\subsection{Kwantyzacja}
+Kolejnym krokiem jest proces kwantyzacji, którego zadaniem jest zamienienie wartości pobranej próbki (która w praktyce może przyjmować nieskończenie wiele wartości) do najbliższego dostępnego poziomu ustalonej, cyrowej skali. Dokładność tej skali jest zdefiniowana przez głębię bitową (ang. \textit{Bit Depth}). W nowoczesnych interfejsach wartość ta zazwyczaj wynosi 24\cite{bit_depth}. Oznacza to w praktyce, że każda próbka może zostać opisana jedną z $2^{24}$ unikalnych, całkowitych wartości. Większość nowoczesnych środowisk do przetwarzania dźwięku decyduje się jednak na konwersję całkowitych wartości zwracanych przez interfejs na 32-bitowe liczby zmiennoprzecinkowe.
+
+\subsection{Rekonstrukcja sygnału: Konwersja cyfrowo-analogowa}
+Gdy urządzenie cyfrowe zakończy przetwarzać sygnał w postaci cyfrowej, aby sygnał ten mógł wybrzmieć na membranach głośników, musimy ponownie przekonwertować go do postaci analogowej. Przetworknik DAC (\textit{Digital-to-Analog-Converter}) otrzymując konkretną wartośc próbki, generuje odpowiadający jej poziom napięcia elektrycznego. Następna próbka jednak przyjdzie dopiero za ułamek milisekundy (wynikający z częstotliwości próbkowania) więc, układ utrzymuje to napięcie do pojawienia się kolejnej próbki. Mechanizm ten określany jest z ang. jako \textit{Zero-Order Hold} i proukuje sygnał, który ma postać schodkową widoczną na Rysunku \ref{fig:zoh}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{zoh.png}
+    \caption{Działanie Zero-Order Hold\cite{guide_to_dsp}}
+    \label{fig:zoh}
+\end{figure}
+
+Taka posatać sygnału zawiera wiele wysokoczęstotliwościowych składowych, które są powyżej częstotliwości $f_N$. Aby je usunąć stosuje się filtr analogowy, który określany jest mianem filtra rekonstrukcyjnego, który stara się wyciąć wszystkie niechciane składowe. Otrzymujemy w ten sposób sygnał może już trafić np. do wzmacniacza wyjściowego, skąd może trafić do przetworkników elektroakustycznych.
+
+\section{Cyfrowe przetwarzanie dźwięku (DSP)}
+Gdy sygnał dźwiękowy opuszcza ADC przyjmuje postać ciągłego strumienia dyskretnych wartości liczbowych. Teoretycznie system mógłby przyjmować, przetwarzać i odsyłać każdą próbkę z osobna natychmiast po jej zarejestrowaniu. W przypadku systemów operacyjnych ogólnego przeznaczenia, takie podejście byłoby skrajnie nieefektywne. Wymagałoby to od procesora przełączania kontekstu (ang. \textit{context switching}) $48000$ razy na sekundę (zakładając \textit{sampling rate} na poziomie $48kHz$), co znacząco ograniczyłoby jego możliwości wykonywania innych zadań np. przetwarzania samego dźwięku. 
+
+Rozwiązaniem tego problemu jest wprowadzenie mechanizmu buforowania. System kolekcjonuje próbki z dźwiękiem i w momencie gdy zostanie osiągnieta ich określona ilość, następuje przerwanie, które informuje o gotowości danych do dalszego przetwarzania. Ta ilość próbek jest istotnym parametrem i jest okeślana jako rozmiar bufora (z ang. \textit{buffer size}).
+
+\subsection{Opóźnienia}
+Wprowadzenie mechanizmu buforowania jest konieczne, ale wiąże się z pewnymi opóźnieniami. Pomijając całkowicie kwestie transportu danych po kablu USB od interfejsu audio do kompuera, czas potrzebny na uzupełnienie bufora $t_b$ wynosi:
+
+\begin{equation}
+    t_b = \frac{n}{f_{s}}
+    \label{eq:buffer_time}
+\end{equation}
+
+\noindent Gdzie $f_s$ to częstotliwość próbkowania, a $n$ to rozmiar bufora. 
+
+Z wzoru \ref{eq:buffer_time} wynika, że dla próbkowania $f_s = 48kHz$ i bufora o rozmiarze $n = 128$ czas potrzebny na zebranie danych wynosi $t_b\approx 2.67 ms$. Tyle samo czasu, ma potem program na przetworzenie bufora z dźwiękiem, a następnie zapisanie go do bufora wyjściowego (system w tym czasie zbiera próbki dla kolejnego bufora). Oznacza to, że końcowe opóźnienie będzie wynosić co najmniej $2t_b$. Użyłem tutaj słowa co najmniej, ponieważ wartość ta zakłada tylko i wyłącznie czas zbierania próbek z dźwiękiem i ich przetwarzania, ale nie bierze pod uwagę innych składowych. 
+
+
+
+
 
 \printbibliography
 
