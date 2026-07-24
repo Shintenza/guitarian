@@ -283,7 +283,7 @@ Sumaryczny narzut wprowadzany przez układy konwersji oraz dwukierunkową transm
 
 Tolerancja na opóźnienia jest kwestią subiektywną i zależy w dużej mierze od charakterystyki wykorzystywanego instrumentu. W praktyce szacuje się, że wartości RTL poniżej 6–8 ms zapewniają pełny komfort gry i są niemal niedostrzegalne dla wykonawcy. Z kolei opóźnienia rzędu 14–16 ms stają się już odczuwalne, jednak wciąż pozwalają na swobodną grę na instrumencie\cite{perception_of_latency}
 
-\section{Stos przetwarzania dźwięku GNU/Linux}
+\section{Stos przetwarzania dźwięku systemu GNU/Linux}
 
 Linuksowy stos audio ma budowę warstwową: dostęp do sprzętu, zarządzanie grafem połączeń oraz właściwe przetwarzanie sygnału są rozdzielone między osobne komponenty. Ta modularność oraz otwartość jądra sprawiają, że Linux jest chętnie wybierany do budowy dedykowanych urządzeń audio na komputerach jednopłytkowych klasy Raspberry Pi.
 
@@ -406,7 +406,33 @@ Szczególnym przypadkiem są operacje strukturalne, takie jak dodawanie, usuwani
 
 Aby wyeliminować konieczność odpytywania wątku audio o swój stan, wątek główny silnika posiada ciągle aktualizowany wektor, zapisujący informacje o aktualnej topologi łańcucha efektów. Takie podejście sprawia, że wątek główny jest w stanie w każdej chwili, bez blokowania wątku audio zwrócić kompletny i aktualny stan z jakim pracuje silnik. Dodatkowo, w systemie powołano do życia określany jako \textit{JACK Event Listener}, którego zadaniem jest monitorowanie zdarzeń asynchronicznych serwera JACK. Jego głównym zadaniem jest monitorowanie aktualnych połączeń pomiędzy portami klienta JACK i zapisywanie wszystkich zmain w pliku JSON, po to aby po restarcie slinika móc ponownie przywołać stan połączeń dźwiękowych.
 
-Warstwa API stanowiąca punkt styku z serwerem kontrolnym, zrealizowana została z wykorzystaniem architektury wielozadaniowej. Główny proces asynchroniczny odbiera polecenia z gniazd sieciowych  delegując, pracę do odpowiednich metod silnika audio. Równolegle funkcjonuje obsługa powiadomień, nasłuchująca zmiany stanu silnika audio przez kanał komunikacyjny typu \textit{Multi-Producer, Single-Consumer} - MPSC. Po każdej istotnej zmianie w stanie wysyłane jest powiadomienie do wszystkich subsckrybentów za pomocą gniazda \textit{PUB}.
+Warstwa API stanowiąca punkt styku z serwerem kontrolnym, zrealizowana została z wykorzystaniem architektury wielozadaniowej. Główny proces asynchroniczny odbiera polecenia z gniazd sieciowych  delegując, pracę do odpowiednich metod silnika audio. Równolegle funkcjonuje obsługa powiadomień, nasłuchująca zmiany stanu silnika audio przez kanał komunikacyjny typu \textit{Multi-Producer, Single-Consumer} - MPSC. Po każdej istotnej zmianie w stanie wysyłane jest powiadomienie do wszystkich subskrybentów za pomocą gniazda \textit{PUB}.
+
+
+\chapter{Szczegóły implementacyjne}
+
+\section{Wykorzystane technologie}
+W niniejszej sekcji omówiono kluczowe technologie oraz narzędzia programistyczne wykorzystane na etapie implementacji zrealizowanego systemu.
+
+\subsection{Silnik audio}
+Silnik audio zaimplementowano w języku \textit{Rust}. Język ten charakteryzuje się wydajnością obliczeniową porównywalną z językami C i C++, oferując jednocześnie nowoczesną składnię. Jego fundamentalną cechą jest wbudowany mechanizm \textit{borrow checker}\cite{rust_docs}, który już na etapie kompilacji rygorystycznie weryfikuje bezpieczeństwo dostępu do pamięci. Chociaż rygor ten niejednokrotnie wydłuża proces pisania kodu, to w końcowym rozrachunku skutecznie zapobiega trudnym w diagnozie błędom (takim jak wycieki pamięci czy \textit{race conditions}), co jest aspektem krytycznym przy budowie systemów czasu rzeczywistego.
+
+Warstwę przetwarzania dźwięku oparto na architekturze serwera JACK oraz dedykowanej bibliotece klienckiej. Jest to rozwiązanie stanowiące branżowy standard w profesjonalnych środowiskach linuksowych, gwarantujące wysoką stabilność oraz pracę z niskimi opóźnieniami.
+
+Obsługa wtyczek realizowana jest za pośrednictwem biblioteki \textit{Lilv}, a dokładniej jej odpowiednika dla języka \textit{Rust}. Narzędzie to automatyzuje proces indeksowania dostępnych w systemie wtyczek w standardzie LV2 oraz dostarcza przejrzyste API, na szereg istotnych operacji (od inicjalizacji po mapowanie portów wejścia i wyjścia).
+
+Istotnym elementem architektury komunikacyjnej silnika jest również biblioteka \textit{ZeroMQ}. W sposób znaczący ułatwia ona operowanie na gniazdach UNIX, oferując wydajne środowisko i różnorodne metody komunikacji.
+
+\subsection{Serwer kontrolny}
+Ten komponent systemu również został opracowany przy użyciu języka \textit{Rust}. Zastosowanie ujednoliconego stosu technologicznego drastycznie uprościło komunikację pomiędzy silnikiem audio a serwerem kontrolnym. Pozwoliło to na współdzielenie definicji struktur danych opisujących przesyłane komunikaty pomiędzy oboma modułami. Dzięki temu mechanizm binarnego kodowania i dekodowania informacji stał się w pełni zunifikowany, eliminując konieczność pisania podwójnego kodu dla różnych środowisk. 
+
+Ponadto, użycie jednego języka programowania dla całej warstwy lokalnej (uruchamianej na urządzeniu) umożliwiło wykorzystanie wbudowanego w narzędzie \textit{Cargo} mechanizmu przestrzeni roboczych (ang. \textit{workspaces}). Pozwala to na wygodne dzielenie wspólnych zależności oraz zintegrowany proces kompilacji wielu podprojektów jednocześnie.
+
+Do obługi połączeń sieciowych wykorzystano bibliotekę \textit{Axum}, która oferuje również wsparcie dla \textit{web sockets}. W roli bazy danych wykorzystano \textit{Sqlite}, które jest minimalistycznym i wydajnym rozwiązaniem. Do komunikacji z bazą danych wykorzystano bibliotekę \textit{SeaORM}.
+
+\subsection{Aplikacja mobilna}
+Do implementacji aplikacji klienckiej wybrano framework \textit{React Native}. Wybór ten był podyktowany nie tylko obszernym ekosystemem dostępnych bibliotek, ale przede wszystkim możliwością tworzenia oprogramowania wieloplatformowego (ang. \textit{cross-platform}). Pozwoliło to na jednoczesne wsparcie systemów operacyjnych iOS oraz Android przy wykorzystaniu pojedynczej bazy kodu.
+
 
 
 \printbibliography
