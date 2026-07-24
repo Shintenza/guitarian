@@ -258,7 +258,7 @@ Gdy sygnał dźwiękowy opuszcza ADC przyjmuje postać ciągłego strumienia dys
 Rozwiązaniem tego problemu jest wprowadzenie mechanizmu buforowania. System kolekcjonuje próbki z dźwiękiem i w momencie gdy zostanie osiągnieta ich określona ilość, następuje przerwanie, które informuje o gotowości danych do dalszego przetwarzania. Ta ilość próbek jest istotnym parametrem i jest okeślana jako rozmiar bufora (z ang. \textit{buffer size}).
 
 \subsection{Opóźnienia}
-Wprowadzenie mechanizmu buforowania jest konieczne, ale wiąże się z pewnymi opóźnieniami. Pomijając całkowicie kwestie transportu danych po kablu USB od interfejsu audio do kompuera, czas potrzebny na uzupełnienie bufora $t_b$ wynosi:
+Wprowadzenie mechanizmu buforowania jest konieczne, ale wiąże się z pewnymi opóźnieniami. Pomijając opóźnienia w działaniu interfejsu audio i transportu danych za pomocą USB, czas potrzebny na uzupełnienie bufora $t_b$ wynosi:
 
 \begin{equation}
     t_b = \frac{n}{f_{s}}
@@ -267,9 +267,46 @@ Wprowadzenie mechanizmu buforowania jest konieczne, ale wiąże się z pewnymi o
 
 \noindent Gdzie $f_s$ to częstotliwość próbkowania, a $n$ to rozmiar bufora. 
 
-Z wzoru \ref{eq:buffer_time} wynika, że dla próbkowania $f_s = 48kHz$ i bufora o rozmiarze $n = 128$ czas potrzebny na zebranie danych wynosi $t_b\approx 2.67 ms$. Tyle samo czasu, ma potem program na przetworzenie bufora z dźwiękiem, a następnie zapisanie go do bufora wyjściowego (system w tym czasie zbiera próbki dla kolejnego bufora). Oznacza to, że końcowe opóźnienie będzie wynosić co najmniej $2t_b$. Użyłem tutaj słowa co najmniej, ponieważ wartość ta zakłada tylko i wyłącznie czas zbierania próbek z dźwiękiem i ich przetwarzania, ale nie bierze pod uwagę innych składowych. 
+Ze wzoru \ref{eq:buffer_time} wynika, że dla częstotliwości próbkowania $f_s$ równej 48 kHz oraz bufora o rozmiarze $n = 128$ próbek, czas niezbędny na zgromadzenie danych wynosi $t_b \approx$ 2,67 ms. System dysponuje dokładnie takim samym przedziałem czasu na przetworzenie pełnego bloku danych przez algorytmy DSP, a następnie zapisanie wyniku do bufora wyjściowego (w tym samym czasie układ sprzętowy gromadzi już w tle próbki dla kolejnego cyklu). Wynika z tego, że teoretyczne, minimalne opóźnienie wprowadzane przez architekturę oprogramowania wynosi $2t_b$. Wartość ta stanowi jednak wyłącznie dolną granicę, ponieważ uwzględnia jedynie czas sprzętowego kolekcjonowania próbek i ich cyfrowego przetwarzania, pomijając narzuty wynikające z pozostałych elementów systemu.
 
+Z perspektywy muzyka kluczowym parametrem jest opóźnienie całkowite (ang. \textit{Round-Trip Latency}, RTL), definiowane jako czas, który upływa od momentu fizycznego wyzwolenia dźwięku (np. szarpnięcia struny) do chwili usłyszenia przetworzonego sygnału akustycznego. Na całkowitą wartość RTL składają się następujące czynniki:
 
+\begin{enumerate}
+    \item czas konwersji w układach ADC i DAC,
+    \item latencja transmisji danych (np. pakietyzacja na magistrali USB),
+    \item narzut systemu operacyjnego (w tym opóźnienia planisty, ang. \textit{scheduling latency}),
+    \item wspomniany wcześniej czas pracy z buforami,
+    \item latencja akustyczna, wynikająca z czasu propagacji fali dźwiękowej w powietrzu (w przypadku korzystania z wolnostojących głośników).
+\end{enumerate}
+
+Sumaryczny narzut wprowadzany przez układy konwersji oraz dwukierunkową transmisję USB może wahać się w przedziale od 1,5 ms do 3,8 ms\cite{audio_intetface_overhead}. Ponadto propagacja dźwięku w powietrzu generuje opóźnienie rzędu 2,9 ms na każdy metr odległości od źródła. Przyjmując częstotliwość próbkowania 48 kHz, rozmiar bufora równy 128 próbek oraz wykorzystanie interfejsu audio średniej klasy w połączeniu ze słuchawkami (co pozwala na eliminację latencji akustycznej), wypadkowe opóźnienie całkowite powinno wynosić w przybliżeniu 7,5 ms.
+
+Tolerancja na opóźnienia jest kwestią subiektywną i zależy w dużej mierze od charakterystyki wykorzystywanego instrumentu. W praktyce szacuje się, że wartości RTL poniżej 6–8 ms zapewniają pełny komfort gry i są niemal niedostrzegalne dla wykonawcy. Z kolei opóźnienia rzędu 14–16 ms stają się już odczuwalne, jednak wciąż pozwalają na swobodną grę na instrumencie\cite{perception_of_latency}
+
+\section{Stos przetwarzania dźwięku GNU/Linux}
+
+Linuksowy stos audio ma budowę warstwową: dostęp do sprzętu, zarządzanie grafem połączeń oraz właściwe przetwarzanie sygnału są rozdzielone między osobne komponenty. Ta modularność oraz otwartość jądra sprawiają, że Linux jest chętnie wybierany do budowy dedykowanych urządzeń audio na komputerach jednopłytkowych klasy Raspberry Pi.
+
+\subsection{ALSA}
+
+Bezpośredni dostęp do interfejsu audio zapewnia podsystem ALSA (\textit{Advanced Linux Sound Architecture}), działający na poziomie jądra. Odpowiada on za sterowniki sprzętowe i bufory DMA, a serwery wyższego poziomu, w tym JACK, korzystają z niego zamiast komunikować się ze sprzętem bezpośrednio, JACK korzysta z ALSA do dostępu do sprzętu karty dźwiękowej \cite{gentoo_jack}. 
+
+\subsection{JACK}
+
+Ponad ALSA działa JACK Audio Connection Kit - serwer przestrzeni użytkownika pośredniczący między aplikacjami-klientami a sprzętem. JACK to demon serwera audio, który umożliwia klientom przetwarzanie i routing danych audio oraz MIDI w sposób synchroniczny, dokładny co do próbki i o niskim opóźnieniu \cite{jackd_manpage}, przy czym klienci mogą działać jako osobne procesy lub jako klienci wewnętrzni uruchamiani w ramach procesu serwera \cite{jackd_manpage}. Każdy klient udostępnia porty, które JACK organizuje w graf połączeń. Gdy uruchamiany jest program obsługujący JACK, jego wejścia i wyjścia stają się widoczne dla innych programów obsługujących JACK, dzięki czemu można je łączyć w dowolny sposób \cite{libremusicproduction_jack}, a serwer może pełnić rolę nadrzędnego zegara synchronizującego wszystkich klientów. Dane pomiędzy klientami krążą w postaci 32 bitowych, zmiennoprzecinkowych próbek.
+
+\subsection{Model callback}
+
+Sercem architektury JACK jest cykliczne przetwarzanie oparte na funkcjach zwrotnych (ang. \textit{callback}). Serwer działa w wątku czasu rzeczywistego, który w stałych odstępach (period) aktywuje kolejno wszystkich klientów w grafie. Każdy klient rejestruje własną funkcję przetwarzającą, wywoływaną raz na cykl: odbiera bufor próbek wejściowych, przetwarza go i zwraca bufor wyjściowy przed upływem przydzielonego czasu. Synchroniczne wykonanie wszystkich callbacków w danym cyklu, zgodnie z topologią grafu, gwarantuje deterministyczny przepływ danych od wejścia, przez kolejne aplikacje przetwarzające, aż po wyjście audio.
+
+\section{Programowanie czasu rzeczywistego}
+Jak wspomniano wcześniej, oprogramowanie przetwarzające sygnał w reżimie czasu rzeczywistego dysponuje ściśle określonym oknem czasowym na wykonanie wszystkich operacji obliczeniowych dla danego bufora. Niedotrzymanie tego terminu i opóźnienie w dostarczeniu przetworzonej ramki danych skutkuje przerwaniem ciągłości strumienia audio. Zjawisko to objawia się wystąpieniem słyszalnych zniekształceń i artefaktów, takich jak trzaski (ang. \textit{glitch} lub \textit{audio dropout}) na urządzeniach wyjściowych\cite{real_time_101}.
+
+Duże ograniczenia czasowe dla programów przetwarzających dźwięk oznaczają poświęcenie większej uwagi, jakie operacje są wykonywane w funkcji, która bezpośrednio zajmuje się przetwarzaniem otrzymanych buforów. Aplikacje pracujące z dźwiękiem to prawie zawsze aplikacje wielowątkowe, z tego też powodu niejednokrotnie wątek zajmujący się przetwarzaniem dźwięku musi dzielić stan z drugim wątkiem np. odpowiedzalnym za rysowanie interfejsu użytkownika, który służy do kontroli parametrów z jakimi przetwarzany jest sygnał. W klasycznych programach, naturalnym podejściem byłoby zastosowanie mechanizmów synchronizacji, takich jak \textit{mutex}. W przypadku programowania czasu rzeczywistego wszytkie blokady nie wchodzą w rachubę. Zamiast mechanizmów synchronizaji powinno się zastosować nieblokujące metody synchronizaji jak np. komunikacja za pośrednictwem buforów cyklicznych.
+
+Oczywistą operacją w trakcie zwykłego programowania jest również alokowanie pamięci lub jej zwalnianie. Tymczasem systemowe operacje zarządzania stertą są z natury niedeterministyczne. Mogą one wymagać długotrwałego przeszukiwania wolnych bloków pamięci, oczekiwania na zwolnienie blokad współdzielonych z wolniejszymi wątkami aplikacji, a także wywoływać kosztowne narzuty związane z tzw. błędami braku strony (ang. \textit{page fault}) w pamięci wirtualnej. Nawet pojedyncze opóźnienie wynikające z tych mechanizmów prowadzi do niedotrzymania terminu przetwarzania i przerwania ciągłości sygnału audio. Z tego względu cała pamięć niezbędna do działania algorytmów DSP musi zostać prealokowana podczas początkowej fazy inicjalizacji, jeszcze przed uruchomieniem głównej pętli przetwarzającej dźwięk.
+
+Ze względu na rygorystyczne ograniczenia czasowe, w głównym wątku czasu rzeczywistego niedopuszczalne jest wykonywanie jakichkolwiek operacji wejścia/wyjścia (ang. \textit{Input/Output}, I/O). Restrykcja ta dotyczy operacji na systemie plików (odczyt i zapis dyskowy), interakcji ze standardowymi strumieniami systemowymi (np. wypisywania informacji do konsoli), a także komunikacji sieciowej z wykorzystaniem gniazd (ang. \textit{sockets}). Z perspektywy wąskiego okna czasowego, operacje te są niezwykle kosztowne, a co najważniejsze – skrajnie niedeterministyczne. Próba ich wykonania grozi wstrzymaniem działania wątku audio (ang. \textit{thread blocking}) i przerwach w ciągłości dźwięku.
 
 
 
