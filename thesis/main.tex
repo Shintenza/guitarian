@@ -296,6 +296,7 @@ Bezpośredni dostęp do interfejsu audio zapewnia podsystem ALSA (\textit{Advanc
 Ponad ALSA działa JACK Audio Connection Kit - serwer przestrzeni użytkownika pośredniczący między aplikacjami-klientami a sprzętem. JACK to demon serwera audio, który umożliwia klientom przetwarzanie i routing danych audio oraz MIDI w sposób synchroniczny, dokładny co do próbki i o niskim opóźnieniu \cite{jackd_manpage}, przy czym klienci mogą działać jako osobne procesy lub jako klienci wewnętrzni uruchamiani w ramach procesu serwera \cite{jackd_manpage}. Każdy klient udostępnia porty, które JACK organizuje w graf połączeń. Gdy uruchamiany jest program obsługujący JACK, jego wejścia i wyjścia stają się widoczne dla innych programów obsługujących JACK, dzięki czemu można je łączyć w dowolny sposób \cite{libremusicproduction_jack}, a serwer może pełnić rolę nadrzędnego zegara synchronizującego wszystkich klientów. Dane pomiędzy klientami krążą w postaci 32 bitowych, zmiennoprzecinkowych próbek.
 
 \subsection{Model callback}
+\label{sec:jack_callback}
 
 Sercem architektury JACK jest cykliczne przetwarzanie oparte na funkcjach zwrotnych (ang. \textit{callback}). Serwer działa w wątku czasu rzeczywistego, który w stałych odstępach (period) aktywuje kolejno wszystkich klientów w grafie. Każdy klient rejestruje własną funkcję przetwarzającą, wywoływaną raz na cykl: odbiera bufor próbek wejściowych, przetwarza go i zwraca bufor wyjściowy przed upływem przydzielonego czasu. Synchroniczne wykonanie wszystkich callbacków w danym cyklu, zgodnie z topologią grafu, gwarantuje deterministyczny przepływ danych od wejścia, przez kolejne aplikacje przetwarzające, aż po wyjście audio.
 
@@ -308,6 +309,104 @@ Oczywistą operacją w trakcie zwykłego programowania jest również alokowani
 
 Ze względu na rygorystyczne ograniczenia czasowe, w głównym wątku czasu rzeczywistego niedopuszczalne jest wykonywanie jakichkolwiek operacji wejścia/wyjścia (ang. \textit{Input/Output}, I/O). Restrykcja ta dotyczy operacji na systemie plików (odczyt i zapis dyskowy), interakcji ze standardowymi strumieniami systemowymi (np. wypisywania informacji do konsoli), a także komunikacji sieciowej z wykorzystaniem gniazd (ang. \textit{sockets}). Z perspektywy wąskiego okna czasowego, operacje te są niezwykle kosztowne, a co najważniejsze – skrajnie niedeterministyczne. Próba ich wykonania grozi wstrzymaniem działania wątku audio (ang. \textit{thread blocking}) i przerwach w ciągłości dźwięku.
 
+
+\chapter{Architektura projektu}
+W niniejszym rozdziale zaprezentowano architekturę oraz szczegóły techniczne zrealizowanego systemu do zarządzania cyfrowymi efekami gitarowy. Stanowi on płynne przejście od rozważań teoretycznych dotyczących cyfrowego sygnału i wymogów środowiska czasu rzeczywistego, do praktycznej implementacji omawianych zagadnień. W kolejnych sekcjach szczegółowo omówiono zagadnienia architektoniczne, obejmujące podział systemu na komponenty i sposoby komunikacji między tymi komponentami. Przybliżono również model wielowątkowy komponentu czasu rzeczywistego, a także wyjaśniono metody synchronizacji stanu z wątkiem czasu rzeczywistego.
+
+\section{Środowisko uruchomieniowe}
+System został zaprojektowany do uruchamiania na urządzeniach jednopłytkowych takich, jak Raspberry Pi. Urządzenia te, w większości przypadków są oparte o procesor w architekturze ARM, ale sam system jest również wspierany na architekturze x86. Nacisk projektu na wykorzystanie tego typu urządzeń wynika głównie z ich niewielkiego rozmiaru i znikomego zapotrzebowania na energię. Działanie całego systemu zostało oparte o system operacyjny GNU/Linux, a dokładniej dystrybucję Debian. Wybór tej konkretnej dystrybucji został w dużej mierze podyktowany dużą stabilnością i oficjalnymi zaleceniami producentów Raspberry Pi 5, na którym testowany był system. Użyte technologie do stworzenia systemu są wymienione w daleszej części dokumentu.
+
+\section{Składowe systemu}
+
+System ma architekturę modularną, składającą się z 3 kluczowych komponentów widocznych na rysunku \ref{fig:general_architecture}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{general_architecture.drawio.png}
+    \caption{Podział systemu na składowe [źródło własne] }
+    \label{fig:general_architecture}
+\end{figure}
+
+\subsection{Silnik audio}
+Główny komponent, którego zadaniem jest praca z wtyczkami i przetwarzanie dźwięku za ich pomocą. Umożliwia wyszukiwanie, ładowanie z dysku, wstępną inicjalizację, organizację, ustawianie parametrów wtyczek, a także zajmuje się dostarczaniem odpowiednich wejść i wyjść dla tych wtyczek. Do jego obowiązków należy również zarejestrowanie w systemie klienta JACK, a także wszystkich wymaganych portów. Slinik odpowiedzialny jest również za zarządzanie wirtualnym grafem połączeń dźwiękowych, a także kontrolą parametrów z jakimi przetwarzany jest dźwięk (\textit{buffer size} i \textit{sampling rate}). Komponent ten udostępnia API, oparte o gniazda, które umożliwia wysyłanie poleceń umożliwiających np. pobranie aktualnego stanu lub wykonanie konkretnej operacji.
+
+\subsection{Serwer kontrolny}
+Głównym zadaniem serwera kontrolnego jest pośredniczenie w komunikacji pomiędzy silnikiem audio, aplikacją mobilną, a także bazą danych. Komponent ten w reakcji na zapytania płynące z aplikacji mobilnej, przetwarza je, generuje odpowiednią wiadomość, a następnie wysyła ją za pomocą gniazd do silnika audio i oczekuje na odpowiedź po czym przekierowywuje ją spowrotem do aplikacji mobilnej. Udostępnia REST API, a także zajmuje się obsługą połączeń z wykorzystaniem \textit{web sockets} z pomocą, których rozsyła powiadomienia o zdarzeniach zgłaszanych przez silnik audio do wszystkich podłączonych instacji aplikacji mobilnych. Razem z silnikiem audio, pracują pod kontrolą jednego urządzenia.
+
+\subsection{Aplikacja mobilna}
+Aplikacja na urządzenia mobilne jest głównym interfejsem dla użytkownika, który pozwala mu kontrolować zachowanie systemu. Z poziomu aplikacji, użytkownik może obserwować aktulany stan łańcucha efektów gitarowych i wykonywać na nim wszelkie operacje. Posiada również możliwość kontrolowania ustawień z jakimi działa system - może zarządzać aktywnymi urządzeniami wejścia i wyjścia, a także sterować opóźnieniami przez modyfikację rozmiaru bufora. Aplikacja komunikuje się bezpośrednio z serwerem kontrolnym za pomocą dostępnego REST API i połączenia z wykorzystaniem \textit{web sockets}.
+
+\subsection{Zalety architektury modularnej}
+Kluczową zaletą podział systemu na niezależny silnik audio oraz serwer sterujący pozwala na odseparowanie krytycznego czasowo przetwarzania dźwięku od operacji związanych z komunikacją sieciową, obsługą aplikacji oraz dostępem do bazy danych. Dzięki temu silnik audio może koncentrować się na realizacji przetwarzania sygnału w czasie rzeczywistym, podczas gdy serwer sterujący pełni funkcję warstwy pośredniczącej odpowiedzialnej za koordynację komunikacji pomiędzy poszczególnymi komponentami systemu.
+
+Dodatkową zaletą takiego podziału jest elastyczność systemu oraz możliwość jego dalszej rozbudowy. Umieszczenie logiki sterującej w niezależnym serwerze pozwala na oddzielenie sposobu komunikacji z użytkownikiem od samego silnika przetwarzania dźwięku. W rezultacie w przyszłości możliwe byłoby dodanie kolejnych interfejsów sterowania, takich jak komunikacja Bluetooth, gRPC, interfejs wiersza poleceń czy nawet dedykowany fizyczny kontroler wyposażony w pokrętła i przyciski, bez konieczności modyfikowania logiki odpowiedzialnej za przetwarzanie sygnału audio.
+
+Nowy interfejs musiałby jedynie komunikować się z warstwą odpowiedzialną za sterowanie systemem i korzystać z istniejącego mechanizmu zarządzania stanem oraz komunikacji z silnikiem audio. Dzięki temu poszczególne sposoby sterowania mogą być rozwijane niezależnie od siebie, a architektura systemu pozostaje otwarta na przyszłe rozszerzenia. Takie podejście ogranicza również zależność systemu od konkretnej technologii komunikacyjnej oraz konkretnego rodzaju interfejsu użytkownika.
+
+\section{Schemat komunikacji}
+Podział systemu na trzy odrębne komponenty architektoniczne wiąże się ze znacznymi wyzwaniami komunikacyjnymi. Z jednej strony aplikacja kliencka musi mieć zapewniony natychmiastowy dostęp do aktualnego stanu silnika audio, z drugiej zaś – dysponować możliwością dynamicznego wpływania na jego pracę. O ile operacje takie jak dodawanie nowych wtyczek czy zmiana globalnych ustawień konfiguracyjnych można z powodzeniem realizować za pośrednictwem klasycznego wzorca REST API, problematyczna staje się płynna regulacja parametrów w czasie rzeczywistym. Interakcja użytkownika z kontrolką interfejsu (np. wirtualnym potencjometrem) generuje dziesiątki zdarzeń w ułamku sekundy. W takim scenariuszu każdorazowe wysyłanie żądania z użyciem protokołu HTTP wprowadzałoby nieakceptowalny narzut sieciowy oraz zauważalne opóźnienia. 
+
+Kolejnym kluczowym wyzwaniem jest utrzymanie ścisłej spójności pomiędzy stanem prezentowanym w aplikacji mobilnej a faktycznym stanem silnika audio. Sytuację dodatkowo komplikuje wymóg obsługi wielu klientów jednocześnie – użytkownik może bowiem sterować systemem równolegle z poziomu kilku urządzeń (np. smartfonu i tabletu). Wymusza to zaprojektowanie mechanizmu natychmiastowej propagacji zmian i synchronizacji interfejsów na wszystkich podłączonych urządzeniach.
+
+\subsection{Podział operacji}
+Kluczowym założeniem architektonicznym przy projektowaniu komunikacji pomiędzy komponentami systemu było zdefiniowanie dwóch kategorii przepływu danych: operacji kosztownych oraz operacji lekkich. Operacje kosztowne dotyczą zmian stanu lub zapytań, które wymagają komunikatu zwrotnego bądź potwierdzenia wykonania zadania przez silnik audio. Działania te charakteryzują się stosunkowo niską częstotliwością występowania. Typowym przykładem takiej operacji jest proces dodawanie nowej wtyczki lub żądanie pobrania pełnego stanu systemu – sekwencja ta wymaga wysłania zapytania, przetworzenia go przez silnik, a następnie oczekiwania na odpowiedź.
+
+Przeciwieństwo stanowią operacje lekkie, realizowane w modelu jednokierunkowym (często określanym jako \textit{fire-and-forget}), które z założenia nie wymagają bezpośredniego potwierdzenia odbioru od adresata. Z reguły są one wykonywane z bardzo dużą częstotliwością. Do tej grupy zalicza się wspomnianą wcześniej, płynną regulację parametrów wtyczek oraz asynchroniczne rozgłaszanie zdarzeń (ang. \textit{events}) informujących podłączonych klientów o aktualizacjach w silniku audio.
+
+\subsection{Komunikacja silnik audio - serwer kontrolny}
+Schemat komunikacji pomiędzy silnikiem audio, a serwerem kontrolnym znajduje się na Rysunku \ref{fig:engine-server_communication}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{engine-server_communication.png}
+    \caption{Schemat komunikacji silnik audio - serwer kontrolny[źródło własne]}
+    \label{fig:engine-server_communication}
+\end{figure}
+
+Komunikacja pomiędzy tymi dwoma komponentami odbywa się zapomocą 3 różnych zestawów gniazd dostępnych w bibliotece \textit{ZeroMQ}:
+\begin{enumerate}
+    \item \textit{REQ/REP} -- są wykorzystywanie głównie do obsługi operacji kosztownych, które wymagają odpowiedzi od sinlika audio np. pobranie aktualnego stanu
+    \item \textit{PUSH/PULL} -- gniazda zajmujące się komunikacją typu \textit{fire-and-forget}. Wykorzystywane są do obsługi dużej ilości poleceń lekkich np. zmiany parametrów wtyczki
+    \item \textit{PUB/SUB} -- za pomocą tych gniazd silnik audio wysyła powiadomienia o wszystkich zmianach stanu do jednego lub więcej subskrybentów. Dla każdego urządzenia, które połączy się z serwerem kontrolnym, tworzone jest osobne gniazdo nasłuchujące
+\end{enumerate}
+
+Ponieważ założono, że silnik audio oraz serwer kontrolny będą domyślnie funkcjonować w obrębie tego samego urządzenia sprzętowego, do wymiany danych między nimi wykorzystano mechanizm gniazd domeny uniksowej (ang. \textit{Unix Domain Sockets}). Stanowią one wysoce zoptymalizowaną formę komunikacji międzyprocesowej (ang. \textit{Inter-Process Communication}, IPC), która omija pełny stos sieciowy systemu operacyjnego, co znacząco redukuje opóźnienia. Warto przy tym zaznaczyć, że przyjęta architektura nie wymusza ścisłej lokalności komponentów. Zastosowana abstrakcja oparta na standardowym interfejsie gniazd pozwala na łatwą zmianę protokołu (np. na gniazda TCP/UDP), umożliwiając komunikację przez sieć.
+
+W celu dalszej optymalizacji zastosowano w pełni binarny format przesyłanych wiadomości. Pozwala to na eliminację kosztownego narzutu obliczeniowego związanego z parsowaniem i serializacją tekstu (charakterystycznego dla formatów takich jak JSON czy XML), czyniąc opóźnienia komunikacyjne niemal znikomymi. Takie podejście gwarantuje wyjątkowo wysoką wydajność systemu, a równoległe zastosowanie trzech niezależnych zestawów gniazd znacząco zwiększa jego całkowitą przepustowość.
+
+\subsection{Komunikacja serwer kontrolny - aplikacja mobilna}
+Schemat komunikacji pomiędzy serwerem kontrolnym, a aplikacją mobilną znajduje się na Rysunku \ref{fig:server-app_communication}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{server-app_communication.png}
+    \caption{Schemat komunikacji serwer kontrolny - aplikacja mobilna[źródło własne]}
+    \label{fig:server-app_communication}
+\end{figure}
+
+Zgodnie z przyjętym podziałem, realizacja operacji kosztownych odbywa się za pośrednictwem interfejsu REST API, natomiast do obsługi operacji lekkich i częstych wykorzystano protokół WebSocket. Komunikacja oparta na tej technologii ma charakter w pełni dwukierunkowy (ang. \textit{full-duplex}). Dzięki temu aplikacja kliencka może w sposób ciągły wysyłać polecenia sterujące (np. regulację parametrów), a jednocześnie asynchronicznie odbierać powiadomienia o zmianach stanu. 
+
+Po zestawieniu połączenia sieciowego pomiędzy instancją aplikacji a serwerem kontrolnym, serwer ten subskrybuje strumień zdarzeń pochodzących z silnika audio. Pełni on tym samym funkcję aktywnego pośrednika – nasłuchuje na komunikaty nadchodzące z lokalnych gniazd IPC, a następnie niezwłocznie propaguje je do podłączonych urządzeń docelowych. Wymiana informacji na zewnętrznej warstwie sieciowej (pomiędzy serwerem kontrolnym a aplikacją kliencką) oparta jest na formacie JSON, który stanowi powszechnie uznany i optymalny standard dla tego typu komunikacji.
+
+\section{Schemat wielowątkowości silnika audio}
+Na Rysunku \ref{fig:engine_arch} zaprezentowany jest schemat obrazujący działanie silnika audio:
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{engine_architecture.png}
+    \caption{Architektura silnika audio}
+    \label{fig:engine_arch}
+\end{figure}
+
+Kluczowym aspektem architektonicznej strony silnika audio jest zapewnienie bezkolizyjnej i wysoce wydajnej komunikacji pomiędzy priorytetowym wątkiem przetwarzającym dźwięk, a resztą wątków silnika. Łączy on wykorzystanie prawdziwych wątków, jak i podejścia asynchronicznego, które w szczególności pozwala na wygodną obsługę wielu gniazd jednocześnie.
+
+Fundamentem przetwarzania sygnału jest wspomniany w sekcji \ref{sec:jack_callback} \textit{callback} serwera JACK, operujący w dedykowanym, izolowanym wątku czasu rzeczywistego (wątek audio). Aktualny stan parametrów wszystkich wtyczek przechowywany jest w głównym wątku silnika w postaci wektora zmiennych atomowych zmiennoprzecinkowych (ang. \textit{atomic floats}). Zastosowanie typów atomowych gwarantuje, że wątek audio może w sposób ciągły i całkowicie nieblokujący odczytywać aktualne wartości z pamięci, unikając blokad.
+
+Szczególnym przypadkiem są operacje strukturalne, takie jak dodawanie, usuwanie lub zmiana kolejności wtyczek w łańcuchu sygnałowym. Działania te często wymagają wykonywania operacji dyskowych, alokacji pamięci na ciężkie struktury lub tworzą instancje wtyczek. Wszystkie te operacje są wymagające i wolne, dlatego wykonywane są na głównym wątku silnika. Gdy zostaną ukończone, główny wątek przygotowywuje polecenie, które następnie jest pakowane do jednokierunkowego bufora cyklicznego i za jego sprawą trafia do wątka audio. Ten, na samym początku każdego cyklu przetwarzania (ang. \textit{sweep}), weryfikuje stan bufora cyklicznego, asymilując nowe instrukcje przed rozpoczęciem modyfikacji dźwięku, po czym aplikuje je do swojego wektora aktywnych instancji.
+
+Aby wyeliminować konieczność odpytywania wątku audio o swój stan, wątek główny silnika posiada ciągle aktualizowany wektor, zapisujący informacje o aktualnej topologi łańcucha efektów. Takie podejście sprawia, że wątek główny jest w stanie w każdej chwili, bez blokowania wątku audio zwrócić kompletny i aktualny stan z jakim pracuje silnik. Dodatkowo, w systemie powołano do życia określany jako \textit{JACK Event Listener}, którego zadaniem jest monitorowanie zdarzeń asynchronicznych serwera JACK. Jego głównym zadaniem jest monitorowanie aktualnych połączeń pomiędzy portami klienta JACK i zapisywanie wszystkich zmain w pliku JSON, po to aby po restarcie slinika móc ponownie przywołać stan połączeń dźwiękowych.
+
+Warstwa API stanowiąca punkt styku z serwerem kontrolnym, zrealizowana została z wykorzystaniem architektury wielozadaniowej. Główny proces asynchroniczny odbiera polecenia z gniazd sieciowych  delegując, pracę do odpowiednich metod silnika audio. Równolegle funkcjonuje obsługa powiadomień, nasłuchująca zmiany stanu silnika audio przez kanał komunikacyjny typu \textit{Multi-Producer, Single-Consumer} - MPSC. Po każdej istotnej zmianie w stanie wysyłane jest powiadomienie do wszystkich subsckrybentów za pomocą gniazda \textit{PUB}.
 
 
 \printbibliography
