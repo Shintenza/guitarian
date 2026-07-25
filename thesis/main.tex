@@ -354,6 +354,7 @@ Kluczowym założeniem architektonicznym przy projektowaniu komunikacji pomiędz
 Przeciwieństwo stanowią operacje lekkie, realizowane w modelu jednokierunkowym (często określanym jako \textit{fire-and-forget}), które z założenia nie wymagają bezpośredniego potwierdzenia odbioru od adresata. Z reguły są one wykonywane z bardzo dużą częstotliwością. Do tej grupy zalicza się wspomnianą wcześniej, płynną regulację parametrów wtyczek oraz asynchroniczne rozgłaszanie zdarzeń (ang. \textit{events}) informujących podłączonych klientów o aktualizacjach w silniku audio.
 
 \subsection{Komunikacja silnik audio - serwer kontrolny}
+\label{sec:communication_engine-server}
 Schemat komunikacji pomiędzy silnikiem audio, a serwerem kontrolnym znajduje się na Rysunku \ref{fig:engine-server_communication}.
 
 \begin{figure}[htbp]
@@ -432,6 +433,70 @@ Do obługi połączeń sieciowych wykorzystano bibliotekę \textit{Axum}, która
 
 \subsection{Aplikacja mobilna}
 Do implementacji aplikacji klienckiej wybrano framework \textit{React Native}. Wybór ten był podyktowany nie tylko obszernym ekosystemem dostępnych bibliotek, ale przede wszystkim możliwością tworzenia oprogramowania wieloplatformowego (ang. \textit{cross-platform}). Pozwoliło to na jednoczesne wsparcie systemów operacyjnych iOS oraz Android przy wykorzystaniu pojedynczej bazy kodu.
+
+\section{Przegląd implementacyjny silnika audio}
+W niniejszej sekcji omówiono szczegóły implementacyjne silnika audio. Zaprezentowano w niej kluczowe struktury, zdefiniowano ich zakres odpowiedzialności oraz opisano zachodzące między nimi relacje i interakcje. W tej sekcji będzie wielokrotnie pojawiać się słowo \textit{struktura} zamiast \textit{klasa}, ponieważ język \textit{Rust} nie jest językiem obiektowym (ale wspiera część jego koncepcji).
+
+\subsection{\textit{EngineClient}}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{engine_client_uml.drawio.png}
+    \caption{Schemat UML dla \textit{EngineClient}[źródło własne]}
+\end{figure}
+
+Struktura \textit{EngineClient} odpowiada bezpośrednio za integrację systemu z serwerem JACK. Do jej głównych zadań należy inicjalizacja instancji klienta, rejestracja portów wejściowych i wyjściowych, zarządzanie topologią połączeń pomiędzy portami audio, a także automatyczne przywracanie zapisanych wcześniej tras sygnałowych po restarcie silnika. Ponadto, struktura ta udostępnia API, które pozwala na odczyt bieżących parametrów środowiska uruchomieniowego (takich jak częstotliwość próbkowania i rozmiar bufora) oraz informacji o aktywnych połączeniach, jak również dostarcza metody umożliwiające ich dynamiczną modyfikację. Dodatkowo rejestruje w kliencie JACK dwie kluczowe stuktury \textit{AudioProcessor} i \textit{NotificationHandler}.
+
+\subsubsection{AudioProcessor}
+Omawiana struktura funkcjonuje w obrębie dedykowanego wątku audio, przeznaczonego wyłącznie do przetwarzania sygnału w reżimie czasu rzeczywistego. Jej metoda \textit{process} jest cyklicznie wywoływana przez serwer JACK w celu operowania na napływających próbkach. Struktura ta zarządza prywatnym wektorem przechowującym instancje zainicjalizowanych wtyczek. Algorytmy poszczególnych wtyczek są aplikowane do bufora wejściowego sekwencyjnie, ściśle według kolejności ich występowania w wektorze. Kluczowym elementem działania metody \textit{process} jest faza wstępna - metoda odpytuje bufor cykliczny. Jeżeli znajdują się w nim zakolejkowane polecenia strukturalne, są one aplikowane do prywatnego wektora wtyczek.
+
+\subsubsection{NotificationHandler}
+Metody omawianej struktury są wywoływane w odpowiedzi na określone zdarzenia systemowe zgłaszane przez serwer JACK. Procedura \textit{ports\_connected} aktywowana jest przy każdej zmianie trasowania sygnału. Weryfikuje ona, czy wykryte zmiany dotyczą portów należących do klienta aplikacji, a w przypadku potwierdzenia – utrwala zaktualizowany schemat połączeń w pliku konfiguracyjnym. Ten sam plik wykorzystywany jest następnie podczas procesu rozruchu silnika do automatycznego odtworzenia początkowej struktury połączeń.
+
+Z kolei metoda \textit{xrun} i loguje przypadki wystąpienia zjawiska znanego jako \textit{XRUN} - \textit{buffer underrun/overrun}. Zjawisko to oznacza niedotrzymanie rygorystycznego limitu czasu przeznaczonego na przetworzenie bieżącej ramki danych audio, co w konsekwencji prowadzi do przerwania ciągłości sygnału i powstania słyszalnych zniekształceń lub trzasków (ang. \textit{audio glitch}).
+
+\subsection{\textit{PluginManager}}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{plugin_manager_uml.drawio.png}
+    \caption{Schemat UML dla \textit{PluginManager}[źródło własne]}
+\end{figure}
+
+Struktura \textit{PluginManager} odpowiada za realizację wszystkich operacji związanych z wtyczkami audio – począwszy od zwracania listy dostępnych wtyczek, poprzez ich inicjalizację i usuwanie, aż po modyfikację ich parametrów oraz zmianę położenia w wirtualnym łańcuchu efektów. Z architektonicznego punktu widzenia komponent ten implementuje wzorzec strukturalny Fasady (ang. \textit{Facade}). Hermetyzuje on wewnętrzną złożoność systemu, delegując zadania związane ze wstępnym wyszukiwaniem i zarządzaniem bibliotekami do komponentu \textit{LV2PluginRepository}, natomiast żądania modyfikacji samej topologii łańcucha przetwarzania przekazuje do struktury \textit{PluginChain}. Ponadto omawiana struktura odpowiada za zapisywanie wszelkich zmian wprowadzanych w łańcuchu wtyczek do pliku. Plik ten następnie jest używany do przywołania ostatniego stanu po ponownym uruchomieniu silnika.
+
+\subsubsection{PluginChain}
+Przechowuje stan łańcucha wtyczek i udostępnia metody, które pozwalają go modyfikować. Struktura ta oddpowiada również za informowanie wątku audio o zmianach w łanuchu po przez wysyłanie stosownych wiadomości za pomocą bufora cyklicznego.
+
+
+\subsubsection{LV2PluginRepository}
+Omawiana struktura implementuje cechę (ang. \textit{trait} - w środowisku języka Rust stanowiącą odpowiednik klasycznego interfejsu obiektowego) o nazwie \textit{PluginRepository}. Do jej głównych zadań należy realizacja wszelkich działań na samych wtyczkach - wyszukiwanie, listowanie czy ładowanie z dysku i tworzenie instancji.
+
+Choć w obecnej iteracji systemu, gdzie komponent \textit{PluginManager} bazuje wyłącznie na implementacji \textit{LV2PluginRepository}, zastosowanie dodatkowej abstrakcji może wydawać się zabiegiem nadmiarowym, ale jest to w pełni świadoma decyzja architektoniczna. Stanowi ona fundament pod przyszłą rozbudowę systemu o obsługę kolejnych formatów wtyczek audio (np. CLAP). Interfejs \textit{PluginRepository} odegra wówczas kluczową rolę jako elastyczny kontrakt dla warstwy zarządzającej wtyczkami.
+
+
+\subsubsection{LV2PluginInstance}
+Omawiana struktura implementuje cechę \textit{PluginInstance}. Stanowi ona warstwę abstrakcji nad API wtyczek w standardzie LV2, dostarczając zunifikowaną metodę \textit{process}. Metoda ta przyjmuje wskaźniki do buforów wejściowych i wyjściowych (dla lewego i prawego kanału audio). Do jej głównych zadań należy przekazanie owych wskaźników bezpośrednio do wtyczki, aktualizacja wartości na portach kontrolnych (odpowiadających za bieżące parametry efektu) oraz wywołanie wewnętrznej procedury cyfrowego przetwarzania sygnału.
+
+Podobnie jak w przypadku warstwy repozytorium, oparcie architektury na wspólnym interfejsie \textit{PluginInstance} gwarantuje ścisłą separację logiki specyficznej dla konkretnego standardu wtyczek od głównego rdzenia silnika audio. Rozwiązanie to hermetyzuje detale implementacyjne LV2, stanowiąc solidny fundament pod bezinwazyjną integrację alternatywnych formatów wtyczek w przyszłych iteracjach rozwoju systemu.
+
+\subsection{ChainSaver}
+Pomocnicza struktura odpowiedzialna za udostępninanie metod ułatwiających zapis i odczyt zapisanego stanu łańcucha efektów.
+
+\subsection{\textit{MessageHandler}}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.0\textwidth]{message_handler_uml.drawio.png}
+    \caption{Schemat UML dla \textit{MessageHandler}[źródło własne]}
+\end{figure}
+Struktura \textit{MessageHandler} odpowiada za udostępnienie interfejsu API, umożliwiającego zewnętrzne sterowanie silnikiem audio za pośrednictwem gniazd. Pełni ona funkcję asynchronicznego kontrolera w odpowiedzi na zdekodowane komunikaty wejściowe, deleguje wykonanie żądanych operacji do odpowiednich instancji zarządzających, takich jak \textit{EngineClient} (w przypadku operacji na samym kliencie JACK) lub \textit{PluginManager} (w przypadku modyfikacji łańcucha efektów). Obsługa wejścia/wyjścia (I/O) dla gniazd realizowana jest w sposób w pełni asynchroniczny z wykorzystaniem środowiska uruchomieniowego \textit{Tokio}. Szczegółowy schemat tej komunikacji został omówiony w sekcji \ref{sec:communication_engine-server}.
+
+\subsubsection{MessageHandlerController}
+Jest to struktura pomocnicza, pełniąca rolę dedykowanego mechanizmu kontrolnego (zbliżonego koncepcyjnie do wzorca \textit{cancellation token}). Charakteryzuje się ona możliwością swobodnego klonowania i bezpiecznego przekazywania pomiędzy różnymi kontekstami wykonawczymi środowiska asynchronicznego. Jej wyłącznym zadaniem jest umożliwienie bezpiecznego i kontrolowanego przerwania asynchronicznej pętli nasłuchującej na przychodzące komunikaty.
+
+
+\chapter{Przykładowe scenariusze użytkowania}
+
 
 
 
