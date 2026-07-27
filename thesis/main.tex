@@ -494,6 +494,21 @@ Struktura \textit{MessageHandler} odpowiada za udostępnienie interfejsu API, um
 \subsubsection{MessageHandlerController}
 Jest to struktura pomocnicza, pełniąca rolę dedykowanego mechanizmu kontrolnego (zbliżonego koncepcyjnie do wzorca \textit{cancellation token}). Charakteryzuje się ona możliwością swobodnego klonowania i bezpiecznego przekazywania pomiędzy różnymi kontekstami wykonawczymi środowiska asynchronicznego. Jej wyłącznym zadaniem jest umożliwienie bezpiecznego i kontrolowanego przerwania asynchronicznej pętli nasłuchującej na przychodzące komunikaty.
 
+\section{Łączenie aplikacji mobilnej z serwerem kontrolnym}
+
+Proces nawiązywania połączenia pomiędzy aplikacją kliencką a serwerem kontrolnym opiera się na komunikacji sieciowej, co wiąże się z koniecznością zlokalizowania serwera kontrolnego w sieci lokalnej (LAN). Aby zautomatyzować ten proces, zaimplementowano mechanizm wykrywania usług oparty na protokole mDNS (ang. \textit{Multicast DNS}). Po stronie systemu GNU/Linux (działającego na urządzeniu docelowym) wykorzystano demona \textit{Avahi}, który rozgłasza w sieci obecność serwera kontrolnego jako dedykowanej usługi. 
+
+Aplikacja mobilna rozpoczyna swoje działanie od przeszukiwania lokalnej sieci w celu znalezienia usługi o nazwie ściśle odpowiadającej konfiguracji zdefiniowanej w zmiennych środowiskowych (jeśli w pamięci jest już zapisany, krok skanowania jest pomijany). Zastosowanie takiego podejścia znacząco wpływa na prostotę użytkowania z perspektywy końcowego użytkownika. Pomimo automatyzaji tej części, użytkownik może manualnie wprowadzić adres lokalnego urządzenia. 
+
+Dodatkowo, w scenariuszach, w których podłączenie obu urządzeń do tej samej, zewnętrznej infrastruktury sieciowej jest niemożliwe (np. w warunkach scenicznych bez routera Wi-Fi), system wspiera połączenie bezpośrednie. Urządzenie hostujące (np. Raspberry Pi) funkcjonuje wówczas jako bezprzewodowy punkt dostępowy (ang. \textit{hotspot / Access Point}). Co istotne, z punktu widzenia warstwy aplikacyjnej proces odnajdywania serwera i zestawiania połączenia przebiega w tym trybie identycznie, nie wymagając dodatkowej logiki.
+
+Po pomyślnym zlokalizowaniu serwera kontrolnego i nawiązaniu połączenia, aplikacja kliencka zapisuje znaleziony adres IP w pamięci urządzenia. Przy każdym kolejnym uruchomieniu aplikacja w pierwszej kolejności próbuje połączyć się z zapisanym adresem. Dopiero w przypadku niepowodzenia, aplikacja ponownie uruchamia pełną procedurę skanowania sieci za pomocą mDNS. Rozwiązanie to znacząco skraca czas inicjalizacji aplikacji przy codziennym użytkowaniu.
+
+\section{Przygotowanie urządzenia do pracy z systemem}
+W celu znacznego uproszczenia procesu wdrożenia (ang. \textit{deployment}) systemu na docelowym urządzeniu sprzętowym, w ramach pracy przygotowano dedykowany skrypt konfiguracyjny, dostosowany pod dystrybucje GNU/Linux oparte o Debiana. Do jego obowiązków należy między innymi instalacja wszystkich niezbędnych zależności, prekonfiguracja demona \textit{Avahi} (w celu poprawnego rozgłaszania usługi w sieci mDNS), a także pobranie i instalacja bazowego zestawu wtyczek audio. W ramach tego ostatniego kroku system wyposażany jest w popularne efekty pochodzące z popularnej aplikacji \textit{Guitarix}, co zapewnia użytkownikowi dostęp do podstawowej palety brzmień natychmiast po instalacji.
+
+Działania automatyzujące objęły również fazę działania systemu. Opracowano odrębny skrypt rozruchowy (ang. \textit{startup script}), którego zadaniem jest uruchomienie silnika audio i serwera kontrolnego. Rozwiązanie to całkowicie uwalnia użytkownika od konieczności ręcznego zarządzania procesami i wpisywania złożonych poleceń w terminalu.
+
 
 \chapter{Przykładowe scenariusze użytkowania}
 
