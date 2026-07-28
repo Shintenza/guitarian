@@ -11,6 +11,7 @@
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[polish]{babel}
+\usepackage{float}
 
 \usepackage{graphicx}
 \graphicspath{{figures/}}
@@ -511,9 +512,72 @@ Działania automatyzujące objęły również fazę działania systemu. Opracowa
 
 
 \chapter{Przykładowe scenariusze użytkowania}
+\section{Zarządzanie efektami}
+\subsection{Dodawanie wtyczek}
+Po pomyślnym zakończeniu procesu nawiązywania połączenia z serwerem kontrolnym, użytkownikowi prezentowany jest główny interfejs aplikacji, zilustrowany na rysunku \ref{fig:main_screen_empty}. Ekran ten w przyszłości posłuży do wizualizacji aktywnego łańcucha efektów.
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[t]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Screenshot_20260727_203348_Guitarian.jpg}
+        \caption{Główny ekran aplikacji}
+        \label{fig:main_screen_empty}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Screenshot_20260727_203505_Guitarian.jpg}
+        \caption{Widok dolnego panelu z biblioteką dostępnych efektów}
+        \label{fig:plugins_library_sheet}
+    \end{minipage}
+\end{figure}
+
+W celu dodania efektu do łańcucha efektów, należy skorzystać z przycisku akcji umiejscowionego w prawym dolnym rogu ekranu. Interakcja z nim powoduje płynne wysunięcie się dolnego panelu (ang. \textit{bottom sheet}, widocznego na Rysunku \ref{fig:plugins_library_sheet}), który wyświetla listę wszystkich dostępnych w systemie wtyczek. Odszukanie pożądanego efektu może zostać zrealizowane na kilka sposobów: poprzez ręczne przewijanie biblioteki, wykorzystanie wbudowanej wyszukiwarki tekstowej lub zastosowanie filtrów kategorii. Te ostatnie pozwalają na natychmiastowe zawężenie prezentowanej listy wyłącznie do modułów należących do zaznaczonych grup (np. przestery, efekty modulacyjne). Zlecenie załadowania wybranej wtyczki do silnika audio odbywa się w sposób intuicyjny - poprzez pojedyncze dotknięcie (ang. \textit{tap}) odpowiadającego jej kafelka.
 
 
+Po pomyślnym załadowaniu wtyczek i zamknięciu dolnego panelu, oczom użytkownika prezentuje się wizualizacja aktualnego łańcucha efektów. Przykładowa trasa sygnału została zaprezentowana na Rysunku \ref{fig:main_screen}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Screenshot_20260727_203731_Guitarian.jpg}
+    \caption{Główny ekran z wizualną reprezentacją obecnego łańcucha efektów}
+    \label{fig:main_screen}
+\end{figure}
+
+\subsection{Dostosowywanie parametrów wtyczek}
+Po pomyślnym dodaniu wtyczki do łańcucha efektów, użytkownik może kontrolować jej parametry przetwarzania sygnału. Pojedyncze dotknięcie kafelka reprezentującego aktywną wtyczkę powoduje wysunięcie dedykowanego panelu konfiguracyjnego, który został zaprezentowany na Rysunku \ref{fig:params_sheet}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Screenshot_20260727_203842_Guitarian.jpg}
+    \caption{Panel konfiguracji parametrów wtyczki}
+    \label{fig:params_sheet}
+\end{figure}
+
+Manipulacja udostępnionymi kontrolkami skutkuje natychmiastowym wysłaniem zaktualizowanych wartości do silnika audio, co pozwala użytkownikowi na płynne odsłuchiwanie i ewaluację brzmienia w czasie rzeczywistym. Co istotne, interfejs tego widoku jest generowany w sposób w pełni dynamiczny, na podstawie metadanych dostarczanych przez samą wtyczkę. W zależności od zdefiniowanego typu danego parametru, aplikacja renderuje odpowiednie elementy graficzne: klasyczne suwaki dla wartości ciągłych zmiennoprzecinkowych lub dyskretnych, przełączniki dwustanowe dla wartości logicznych, bądź też rozwijane listy wyboru dla parametrów wyliczeniowych.
+
+
+\subsection{Zarządzanie kolejnością i kasowanie}
+Z poziomu głównego obszaru roboczego użytkownik dysponuje możliwościami modyfikacji kolejności aktywnych wtyczek oraz ich usuwania z trasy sygnału. Konfiguracja pozycji w łańcuchu opiera się na powszechnie stosowanym, intuicyjnym wzorcu interakcji przeciągnij i upuść (ang. \textit{drag and drop}). Wykonanie gestu dłuższego przytrzymania (ang. \textit{long press}) na wybranym kafelku włącza tryb swobodnego przenoszenia, pozwalając na przemieszczenie elementu w docelowe miejsce łańcucha. Po zwolnieniu kafelka, zaktualizowana struktura jest natychmiastowo przesyłana do silnika audio w celu zaaplikowania zmian. Działanie tego mechanizmu zilustrowano na rysunku \ref{fig:card_drag}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204053_Guitarian.jpg}
+    \caption{Zarządzanie położeniem wtyczki w łańcuchu efektów}
+    \label{fig:card_drag}
+\end{figure}
+
+Alternatywnie, podczas wykonywania gestu przenoszenia, użytkownik ma możliwość całkowitego usunięcia wtyczki z łańcucha. Operację tę realizuje się poprzez przeciągnięcie kafelka i upuszczenie go w dedykowanej strefie usuwania, która dynamicznie pojawia się w dolnej części ekranu.
+
+Użytkownik ma również możliwość szybkiego usunięcia wszystkich wtyczek z trasy sygnału przez dotknięcie odpowiedniej operacji w otwieranym przyciskiem trzech kropek menu widdocznym na Rysunku \ref{fig:remove_all}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204651_Guitarian.jpg}
+    \caption{Usuwanie wszystkich aktywnych wtyczek z łańcucha efektów}
+    \label{fig:remove_all}
+\end{figure}
 
 \printbibliography
 
