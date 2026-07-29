@@ -558,7 +558,7 @@ Po pomyślnym dodaniu wtyczki do łańcucha efektów, użytkownik może kontrolo
 Manipulacja udostępnionymi kontrolkami skutkuje natychmiastowym wysłaniem zaktualizowanych wartości do silnika audio, co pozwala użytkownikowi na płynne odsłuchiwanie i ewaluację brzmienia w czasie rzeczywistym. Co istotne, interfejs tego widoku jest generowany w sposób w pełni dynamiczny, na podstawie metadanych dostarczanych przez samą wtyczkę. W zależności od zdefiniowanego typu danego parametru, aplikacja renderuje odpowiednie elementy graficzne: klasyczne suwaki dla wartości ciągłych zmiennoprzecinkowych lub dyskretnych, przełączniki dwustanowe dla wartości logicznych, bądź też rozwijane listy wyboru dla parametrów wyliczeniowych.
 
 
-\subsection{Zarządzanie kolejnością i kasowanie}
+\subsection{Zarządzanie kolejnością i usuwanie}
 Z poziomu głównego obszaru roboczego użytkownik dysponuje możliwościami modyfikacji kolejności aktywnych wtyczek oraz ich usuwania z trasy sygnału. Konfiguracja pozycji w łańcuchu opiera się na powszechnie stosowanym, intuicyjnym wzorcu interakcji przeciągnij i upuść (ang. \textit{drag and drop}). Wykonanie gestu dłuższego przytrzymania (ang. \textit{long press}) na wybranym kafelku włącza tryb swobodnego przenoszenia, pozwalając na przemieszczenie elementu w docelowe miejsce łańcucha. Po zwolnieniu kafelka, zaktualizowana struktura jest natychmiastowo przesyłana do silnika audio w celu zaaplikowania zmian. Działanie tego mechanizmu zilustrowano na rysunku \ref{fig:card_drag}.
 
 \begin{figure}[H]
@@ -570,7 +570,7 @@ Z poziomu głównego obszaru roboczego użytkownik dysponuje możliwościami mod
 
 Alternatywnie, podczas wykonywania gestu przenoszenia, użytkownik ma możliwość całkowitego usunięcia wtyczki z łańcucha. Operację tę realizuje się poprzez przeciągnięcie kafelka i upuszczenie go w dedykowanej strefie usuwania, która dynamicznie pojawia się w dolnej części ekranu.
 
-Użytkownik ma również możliwość szybkiego usunięcia wszystkich wtyczek z trasy sygnału przez dotknięcie odpowiedniej operacji w otwieranym przyciskiem trzech kropek menu widdocznym na Rysunku \ref{fig:remove_all}
+Użytkownik ma również możliwość szybkiego usunięcia wszystkich wtyczek z trasy sygnału przez dotknięcie odpowiedniej opcji w otwieranym przyciskiem trzech kropek menu widdocznym na Rysunku \ref{fig:remove_all}, a następnie potwierdzeniu tej akcji.
 
 \begin{figure}[H]
     \centering
@@ -579,6 +579,84 @@ Użytkownik ma również możliwość szybkiego usunięcia wszystkich wtyczek z 
     \label{fig:remove_all}
 \end{figure}
 
-\printbibliography
+\subsection{Zapisywanie ulubionego brzmienia}
+Po precyzyjnym skonfigurowaniu łańcucha przetwarzania sygnału, użytkownik ma możliwość trwałego zapisania jego kompletnego stanu. Funkcjonalność ta pozwala na późniejsze, natychmiastowe przywrócenie ulubionego brzmienia, eliminując potrzebę żmudnego, ręcznego odtwarzania wszystkich ustawień.
+
+W celu utrwalenia aktualnej konfiguracji należy wybrać opcję \textit{Save} z menu kontekstowego. Wywołuje to modalne okno dialogowe (ang. \textit{dialog box}), w którym użytkownik może wprowadzić unikalną nazwę dla tworzonego zestawu ustawień (ang. \textit{preset}). Etap ten został przedstawiony na rysunku \ref{fig:create_preset}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204349_Guitarian.jpg}
+    \caption{Okno dialogowe tworzenia nowego zestawu ustawień (presetu)}
+    \label{fig:create_preset}
+\end{figure}
+
+Po pomyślnym zatwierdzeniu zapisu, nagłówek głównego ekranu aplikacji zostaje zaktualizowany, informując o nazwie obecnie aktywnego profilu. Bezpośrednia interakcja z tym nagłówkiem (pojedyncze dotknięcie) skutkuje wysunięciem dolnego panelu (widocznego na rysunku \ref{fig:presets_sheet}), prezentującego zbiór wszystkich wcześniej zapisanych konfiguracji.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204628_Guitarian.jpg}
+    \caption{Widok panelu z listą dostępnych zestawów ustawień}
+    \label{fig:presets_sheet}
+\end{figure}
+
+Z poziomu omawianego panelu użytkownik może zainicjować proces ładowania wybranego presetu lub dokonać jego trwałego usunięcia. Mechanizm aktualizacji już istniejącego zestawu jest bardzo prosty i sprowadza się do naniesienia pożądanych zmian w  łańcuchu efektów, a następnie ponownego wywołania procedury zapisu. W oknie dialogowym nazwa aktywnego ustawienia jest uzupełniana automatycznie, co po zatwierdzeniu skutkuje nadpisaniem starych wartości. Wprowadzenie w tym miejscu innej nazwy zainicjuje z kolei utworzenie zupełnie nowego ustawienia.
+
+\section{Zarządzanie ustawieniami silnika audio}
+Z perspektywy użyteczności  oraz wygody obsługi, kluczowym wymaganiem jest zapewnienie użytkownikowi możliwości konfiguracji najważniejszych parametrów systemu bez konieczności bezpośredniej ingerencji w środowisko uruchomieniowe silnika audio (np. za pośrednictwem SSH). Z tego też powodu, w aplikacji klienckiej zaimplementowano ekran ustawień, który oddaje kontrolę nad kluczowymi paramerami z poziomu aplikacji mobilnej. Ekran ten został zaprezentowany na rysunku \ref{fig:settings_screen}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204839_Guitarian.jpg}
+    \caption{Ekran ustawień}
+    \label{fig:settings_screen}
+\end{figure}
+
+\subsection{Konfiguracja aktywnych urządzeń wejścia i wyjścia}
+Współczesne zewnętrzne interfejsy audio rzadko ograniczają się do jednego, konkretnego toru sygnału. Większość z nich dysponuje wieloma wejściami (np. wejściem mikrofonowym i instrumentalnym) oraz wieloma wyjściami (pozwalającymi na niezależne podłączenie monitorów odsłuchowych i słuchawek). Z punktu widzenia prostoty użytkowania systemu, absolutnie kluczowe było zaimplementowanie mechanizmu swobodnego zarządzania trasą sygnału. Zaprezentowany na rysunku \ref{fig:settings_screen-in_out}, ekran pozwala zdecydować, które ze sprzętowych portów wejściowych ma stanowić źródło sygnału dla wirtualnego łańcucha efektów, a także na które wyjścia zostanie skierowany finalny, przetworzony dźwięk. Użytkownik może pokierować dźwięk jednocześnie na kilka różnych portów wyjściowych.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204738_Guitarian.jpg}
+    \caption{Ekran ustawień - konfiguracja wejść i wyjść}
+    \label{fig:settings_screen-in_out}
+\end{figure}
+
+Wybrane przez użytkownika opcje, zostaną automatycznie przywołane po ponownym uruchomieniu silnika audio (pod warunkiem, że skonfigurowane porty wciąż będą dostępne z perspektywy środowiska uruchomieniowego).
+
+\subsection{Manualna konfiguracja połączenia z serwerem kontrolnym}
+W przypadku gdy proces automatycznej konfiguracji się nie powiedzie lub użytkownik będzie chciał manualnie zmienić adres serwera kontrolnego, będzie mógł to osiągnąć z poziomu aplikacji. Na widocznym na Rysunku \ref{fig:settings_screen-connection_status} ekranie, użytkownik może zapoznać się z aktualnym statusem połączenia, a także IP serwera kontrolnego. Po kliknięciu opcji \textit{Edit}, użytkownikowi prezentowany jest widok ukazany na Rysunku \ref{fig:settings_screen-connection_edit}.
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[t]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Screenshot_20260727_204750_Guitarian.jpg}
+        \caption{Ekran ustawień - status połączenia}
+        \label{fig:settings_screen-connection_status}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Screenshot_20260727_204756_Guitarian.jpg}
+        \caption{Ekran ustawień - manualna konfiguracja połączenia}
+        \label{fig:settings_screen-connection_edit}
+    \end{minipage}
+\end{figure}
+
+Za pomocą tego ekranu może zostać manualnie wprowadzony adres IP serwera kontrolnego z uwzględnieniem jego portu. Po dotknięciu przycisku zapisu, aplikacja spróbuje nawiązać połączenie z użyciem podanego adresu. Gdy połączenie się uda, adres zostanie zapisany w pamięci urządzenia dzięki czemu  może zosać użyty do zestawienia połączenia przy ponownym uruchomieniu aplikacji.
+
+\subsection{Konfiguracja opóźnień}
+Kluczową opcją, która jest dostępna z poziomu ustawień aplikacji, jest możliwość zarządzania wielkością bufora przetwarzanych próbek dźwiękowych. Jak wspomniano we wcześniejszych sekcjach tego dokumentu, wielkość ta ma bezpośrednie przełożenie na całkowite opóźnienia. Użytkownik za pomocą rozwijanego menu, może wybrać jedną ze wspieranych wielkości bufora. Proces ten jest zobrazowany na Rysunku \ref{fig:settings_screen-delay}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204813_Guitarian.jpg}
+    \caption{Ekran ustawień - konfiguracja opóźnień}
+    \label{fig:settings_screen-delay}
+\end{figure}
+
+Częstoliwość próbkowania widoczna na omowianym ekranie jest dostępna tylko i wyłącznie w trybie do odczytu. Jest to świadoma decyzja, która sprowadza się do tego, że w większości przypadków edycja tego parametru niewiele wnosi do końcowej jakości dźwięku, a jej niewłaściwa wartość może powodować spore problemy z końcową wydajnością systemu, a także wpływać na prawidłową pracę niektórych wtyczek audio. Zablokowana wartość 48kHz jest obecnie standardem, który jest jednocześnie wspierany przez zdecydowaną większość interfejsów audio.
+
 
 \end{document}
