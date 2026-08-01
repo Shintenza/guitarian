@@ -1,0 +1,14 @@
+build-essential
+pkg-config
+git
+curl
+ca-certificates
+libjack-jackd2-dev
+liblilv-dev
+libserd-dev
+sqlite3
+pipewire
+wireplumber
+pipewire-jack
+rtkit
+avahi-daemon

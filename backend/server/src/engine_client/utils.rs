@@ -1,3 +1,32 @@
+use std::time::Duration;
+
+use zeromq::{Socket, ZmqError};
+
+const CONNECT_RETRY_INTERVAL: Duration = Duration::from_millis(250);
+const CONNECT_RETRY_TIMEOUT: Duration = Duration::from_secs(30);
+
+pub async fn connect_retrying<S: Socket>(socket: &mut S, endpoint: &str, label: &str) {
+  let deadline = tokio::time::Instant::now() + CONNECT_RETRY_TIMEOUT;
+  let mut waiting_logged = false;
+
+  loop {
+    match socket.connect(endpoint).await {
+      Ok(()) => return,
+      Err(ZmqError::Network(e)) if e.kind() == std::io::ErrorKind::NotFound => {
+        if tokio::time::Instant::now() >= deadline {
+          panic!("timed out waiting for the {label} socket to appear at {endpoint}");
+        }
+        if !waiting_logged {
+          eprintln!("waiting for the {label} socket at {endpoint} to appear...");
+          waiting_logged = true;
+        }
+        tokio::time::sleep(CONNECT_RETRY_INTERVAL).await;
+      }
+      Err(e) => panic!("failed to connect with the {label} socket: {e}"),
+    }
+  }
+}
+
 #[macro_export]
 macro_rules! define_command {
     (

@@ -3,7 +3,9 @@ use std::sync::Arc;
 use axum::Router;
 
 use crate::{
-  context::AppContextInner, engine_client::engine_clinet::EngineClient, utils::db::init_db,
+  context::AppContextInner,
+  engine_client::engine_clinet::EngineClient,
+  utils::{config::get_bind_address, db::init_db},
 };
 
 mod api;
@@ -31,6 +33,8 @@ async fn main() {
     .merge(api::router())
     .with_state(Arc::new(context));
 
-  let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+  let listener = tokio::net::TcpListener::bind(get_bind_address())
+    .await
+    .unwrap();
   axum::serve(listener, app).await.unwrap();
 }

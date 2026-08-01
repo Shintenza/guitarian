@@ -11,6 +11,7 @@ use zeromq::{PushSocket, ReqSocket, Socket, SocketRecv, SocketSend};
 use crate::engine_client::{
   commands::{EngineCommand, RequestCommandError},
   engine_subscriber::EngineSubscriber,
+  utils::connect_retrying,
 };
 
 #[derive(Clone)]
@@ -36,16 +37,10 @@ impl EngineClient {
     let mut push_socket = self.push_socket.lock().await;
 
     prepare_connect_endpoint(&rep_endpoint);
-    req_socket
-      .connect(&rep_endpoint)
-      .await
-      .expect("failed to connect with the rep socket");
+    connect_retrying(&mut *req_socket, &rep_endpoint, "rep").await;
 
     prepare_connect_endpoint(&pull_endpoint);
-    push_socket
-      .connect(&pull_endpoint)
-      .await
-      .expect("failed to connect with the pull socket");
+    connect_retrying(&mut *push_socket, &pull_endpoint, "pull").await;
   }
 
   pub fn get_engine_subbscriber() -> EngineSubscriber {

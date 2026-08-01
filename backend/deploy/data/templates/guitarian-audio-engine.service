@@ -1,0 +1,19 @@
+[Unit]
+Description=Guitarian audio engine
+After=pipewire.service wireplumber.service
+Wants=pipewire.service wireplumber.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/pw-jack @@INSTALL_DIR@@/bin/audio_engine
+RuntimeDirectory=guitarian
+Environment=REP_SOCKET_ADDRESS=%t/guitarian/rep.sock
+Environment=PULL_SOCKET_ADDRESS=%t/guitarian/pull.sock
+Environment=PUB_SOCKET_ADDRESS=%t/guitarian/pub.sock
+Environment=JACK_CLIENT_NAME=@@JACK_CLIENT_NAME@@
+Environment=RUST_LOG=@@RUST_LOG@@
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target

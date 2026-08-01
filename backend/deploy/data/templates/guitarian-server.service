@@ -1,0 +1,18 @@
+[Unit]
+Description=Guitarian REST and WebSocket server
+After=guitarian-audio-engine.service
+BindsTo=guitarian-audio-engine.service
+
+[Service]
+Type=simple
+ExecStart=@@INSTALL_DIR@@/bin/server
+Environment=REP_SOCKET_ADDRESS=%t/guitarian/rep.sock
+Environment=PULL_SOCKET_ADDRESS=%t/guitarian/pull.sock
+Environment=PUB_SOCKET_ADDRESS=%t/guitarian/pub.sock
+Environment=BIND_ADDRESS=@@BIND_ADDRESS@@
+Environment=RUST_LOG=@@RUST_LOG@@
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target
