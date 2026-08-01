@@ -111,12 +111,13 @@ praktyczne w kreowaniu końcowego brzmienia instrumentu.
 
 Dalsza część pracy krok po kroku wprowadza w techniczne i praktyczne
 aspekty projektu. W pierwszej kolejności omówiono pojęcia teoretyczne
-niezbędne do pełnego zrozumienia działania systemu. Następnie
-przeanalizowano jego architekturę oraz mechanizmy komunikacji między
-poszczególnymi komponentami. W kolejnych rozdziałach przybliżono
-szczegóły implementacyjne wraz z uzasadnieniem wyboru konkretnych
-technologii. Zwieńczeniem pracy jest opis wstępnej konfiguracji
-środowiska oraz prezentacja rzeczywistych scenariuszy użycia
+niezbędne do pełnego zrozumienia działania systemu. W dalszej kolejności,
+zagłębiono się w szczegóły związane z cyfrowym przetwarzaniem sygnału
+instrumentalnego. Następnie przeanalizowano architekturę projektu oraz
+mechanizmy komunikacji między
+poszczególnymi komponentami. W kolejnym rozdziale przybliżono
+szczegóły implementacyjne systemu z opisem kluczowych struktur.
+Zwieńczeniem pracy jest przejście przez rzeczywiste scenariusze
 stworzonego oprogramowania.
 
 \chapter{Wprowadzenie teoretyczne}
@@ -136,7 +137,8 @@ cichego wybrzmiewania szarpanych strun.
 
 Cechą charakterystyczną gitary elektrycznej jest generowanie sygnału
 elektrycznego, który musi zostać poddany wzmocnieniu i przetworzeniu,
-aby za pośrednictwem głośnika ulec konwersji na słyszalną falę akustyczną.
+aby za pośrednictwem głośnika ulec konwersji na słyszalną falę
+akustyczną\cite{wikipedia_guitar}.
 
 Sygnał elektryczny w gitarze powstaje dzięki wykorzystaniu
 przetworników i opiera się na zjawisku indukcji elektromagnetycznej.
@@ -177,15 +179,16 @@ Rysunku \ref{fig:amp}.
 \end{figure}
 
 Każdy z wymienionych wcześniej komponentów ma swoje własne zadanie.
-Przedwzmacniacz odbiera słaby sygnał, filtruje sygnał, regulując przy
+Przedwzmacniacz odbiera słaby sygnał i filtruje go, regulując przy
 tym niskie, średnie i wysokie tony, a także kształtuje główny
 charakter brzmienia. Kolejnym komponentem na drodze sygnału jest
 końcówka mocy, która przyjmuje sygnał charakteryzujący się
-odpowiednią barwą i napięciem, ale nie ma wystarczającej mocy do
-poruszenia membranami. Rozwiązaniem tego właśnie problemu zajmuje się
+odpowiednią barwą, ale nie mający wystarczającej mocy do
+poruszenia membranami w kolumnach głośnikowych. Rozwiązaniem tego
+właśnie problemu zajmuje się
 ten komponent. Może mieć również wpływ na końcowe brzmienie, co jest
-szczególnie widoczne w konstrukcjach lampowych. Finalną częścią są
-głośniki, których głównym zadaniem jest zamiana sygnału elektrycznego
+szczególnie widoczne w konstrukcjach lampowych. Finalną częścią są kolumny
+głośnikowe, których głównym zadaniem jest zamiana sygnału elektrycznego
 na fale akustyczne.
 
 Alternatywne podejście w nagłośnianiu gitary elektrycznej zakłada
@@ -255,8 +258,9 @@ gitarowych\cite{guitar_peadl_types}:
     \begin{enumerate}
       \item \textit{Delay} -- zapisuje sygnał w buforze i odtwarza go
         po określonym czasie, często stosuje się również sprzężenie
-        zwrotne, które powoduje serię coraz cichszych powtórzeń.
-        Działa podobnie do echa\cite{realization_of_guitar_audio_effects}
+        zwrotne, które powoduje serię coraz cichszych
+        powtórzeń\cite{realization_of_guitar_audio_effects}.
+        Działa podobnie do echa
       \item \textit{Reverb} -- również opiera się na opóźnionych
         kopiach sygnału, ale jest znacznie bardziej zaawansowany niż
         \textit{deleay}. Pozwala na symulowanie wybrzmiewania dźwięku
@@ -338,13 +342,7 @@ LV2, a także zyskujący na popularności format CLAP.
 Standard LV2\cite{lv2_website}\cite{lv2_wikipedia} (LADSPA Version 2)
 stanowi ewolucyjne rozwinięcie historycznego już interfejsu LADSPA
 (ang. \textit{Linux Audio Developer's Simple Plugin API}). Jest to
-wieloplatformowy i w pełni otwarty standard wtyczek audio, którego
-architekturę oparto na mechanizmie rozszerzeń (ang.
-\textit{extensions}). Takie podejście pozwala programistom na
-elastyczne implementowanie nowych, zaawansowanych funkcjonalności.
-Rozszerzenia, które zyskają aprobatę społeczności i okażą się
-uniwersalnie użyteczne, mogą zostać oficjalnie włączone do rdzennej
-specyfikacji standardu.
+wieloplatformowy i w pełni otwarty standard wtyczek audio.
 
 Kluczową zaletą formatu LV2 jest ścisłe odseparowanie warstwy
 cyfrowego przetwarzania sygnału (DSP) od interfejsu użytkownika
@@ -359,12 +357,12 @@ Kolejnym wyróżnikiem LV2 jest przeniesienie metadanych opisujących
 wtyczkę do zewnętrznych plików tekstowych w formacie \textit{Turtle}
 (TTL). Pliki te, wykorzystujące struktury danych oparte na trójkach
 standardu RDF\cite{rdf}, w sposób precyzyjny i ustandaryzowany
-opisują architekturę wtyczki. Definiują one między innymi wszystkie
+opisują działanie wtyczki. Definiują one między innymi wszystkie
 porty wejściowe i wyjściowe, dostępne parametry (wraz z ich typami i
 dopuszczalnymi zakresami wartości), a także informacje
 kategoryzacyjne, takie jak klasa wtyczki, nazwa oraz dane autora.
-Zastosowanie semantycznego standardu RDF wymusza ścisłe reguły
-zapisu, co gwarantuje spójność i maszynową czytelność metadanych
+Zastosowanie semantycznego standardu RDF wymusza ścisłe reguły,
+co gwarantuje spójność i czytelność metadanych
 przez programy hostujące.
 
 Zestawienie tych cech – otwartej architektury, izolacji logiki od
@@ -381,11 +379,11 @@ pośrednictwem sieci lokalnej lub protokołu Bluetooth.
 
 Gitara elektryczna generuje sygnał, który jest sygnałem ciągłym. Aby
 urządzenie cyfrowego mogło poddać go analizie, sygnał ten musi zostać
-przetłumaczony na postać dyskretną (cyfrową). Urządzeniem
+przetłumaczony na postać dyskretną. Urządzeniem
 odpowiedzialnym za ten proces jest interfejs audio ukazany na Rysunku
 \ref{fig:audio_interface}, którego kluczowym komponentem jest
 przetwornik analogowo-cyfrowy ADC (z ang. \textit{Analog-to-Digital
-Converter}). Całą drogę sygnału obrazuje Rysunek \ref{fig:audio_path}
+Converter}). Całą drogę sygnału obrazuje Rysunek \ref{fig:audio_path}.
 
 \begin{figure}[htbp]
   \centering
@@ -538,8 +536,10 @@ narzuty wynikające z pozostałych elementów systemu.
 Z perspektywy muzyka kluczowym parametrem jest opóźnienie całkowite
 (ang. \textit{Round-Trip Latency}, RTL), definiowane jako czas, który
 upływa od momentu fizycznego wyzwolenia dźwięku (np. szarpnięcia
-struny) do chwili usłyszenia przetworzonego sygnału akustycznego. Na
-całkowitą wartość RTL składają się następujące czynniki:
+struny) do chwili usłyszenia przetworzonego sygnału
+akustycznego\cite{audio_latency}. Na
+całkowitą wartość RTL składają się następujące
+czynniki\cite{audio_latency_components}:
 
 \begin{enumerate}
   \item czas konwersji w układach ADC i DAC,
@@ -547,7 +547,7 @@ całkowitą wartość RTL składają się następujące czynniki:
   \item narzut systemu operacyjnego (w tym opóźnienia planisty, ang.
     \textit{scheduling latency}),
   \item wspomniany wcześniej czas pracy z buforami,
-  \item latencja akustyczna, wynikająca z czasu propagacji fali
+  \item opóźnienia akustyczne, wynikająca z czasu propagacji fali
     dźwiękowej w powietrzu (w przypadku korzystania z wolnostojących głośników).
 \end{enumerate}
 
@@ -557,8 +557,9 @@ dwukierunkową transmisję USB może wahać się w przedziale od 1,5 ms do
 powietrzu generuje opóźnienie rzędu 2,9 ms na każdy metr odległości
 od źródła. Przyjmując częstotliwość próbkowania 48 kHz, rozmiar
 bufora równy 128 próbek oraz wykorzystanie interfejsu audio średniej
-klasy w połączeniu ze słuchawkami (co pozwala na eliminację latencji
-akustycznej), wypadkowe opóźnienie całkowite powinno wynosić w
+klasy w połączeniu ze słuchawkami (co pozwala na niemal całkowitą
+  eliminację opóźnień
+akustycznych), wypadkowe opóźnienie całkowite powinno wynosić w
 przybliżeniu 7,5 ms.
 
 Tolerancja na opóźnienia jest kwestią subiektywną i zależy w dużej
@@ -566,7 +567,7 @@ mierze od charakterystyki wykorzystywanego instrumentu. W praktyce
 szacuje się, że wartości RTL poniżej 6–8 ms zapewniają pełny komfort
 gry i są niemal niedostrzegalne dla wykonawcy. Z kolei opóźnienia
 rzędu 14–16 ms stają się już odczuwalne, jednak wciąż pozwalają na
-swobodną grę na instrumencie\cite{perception_of_latency}
+swobodną grę na instrumencie\cite{perception_of_latency}.
 
 \section{Stos przetwarzania dźwięku systemu GNU/Linux}
 
@@ -574,7 +575,7 @@ Linuksowy stos audio ma budowę warstwową: dostęp do sprzętu,
 zarządzanie grafem połączeń oraz właściwe przetwarzanie sygnału są
 rozdzielone między osobne komponenty. Ta modularność oraz otwartość
 jądra sprawiają, że Linux jest chętnie wybierany do budowy
-dedykowanych urządzeń audio na komputerach jednopłytkowych klasy Raspberry Pi.
+dedykowanych urządzeń audio na komputerach jednopłytkowych pokroju Raspberry Pi.
 
 \subsection{ALSA}
 
@@ -606,12 +607,13 @@ pomiędzy klientami krążą w postaci 32 bitowych, zmiennoprzecinkowych próbek
 
 Sercem architektury JACK jest cykliczne przetwarzanie oparte na
 funkcjach zwrotnych (ang. \textit{callback}). Serwer działa w wątku
-czasu rzeczywistego, który w stałych odstępach (period) aktywuje
-kolejno wszystkich klientów w grafie. Każdy klient rejestruje własną
+czasu rzeczywistego, który w stałych odstępach aktywuje
+kolejno wszystkich aktywnych, zainteresowanych klientów. Każdy klient
+rejestruje własną
 funkcję przetwarzającą, wywoływaną raz na cykl: odbiera bufor próbek
 wejściowych, przetwarza go i zwraca bufor wyjściowy przed upływem
 przydzielonego czasu. Synchroniczne wykonanie wszystkich callbacków w
-danym cyklu, zgodnie z topologią grafu, gwarantuje deterministyczny
+danym cyklu, zgodnie z połączeniami, gwarantuje deterministyczny
 przepływ danych od wejścia, przez kolejne aplikacje przetwarzające,
 aż po wyjście audio.
 
@@ -660,7 +662,7 @@ dyskowy), interakcji ze standardowymi strumieniami systemowymi (np.
 wypisywania informacji do konsoli), a także komunikacji sieciowej z
 wykorzystaniem gniazd (ang. \textit{sockets}). Z perspektywy wąskiego
 okna czasowego, operacje te są niezwykle kosztowne, a co
-najważniejsze – skrajnie niedeterministyczne. Próba ich wykonania
+najważniejsze – niedeterministyczne. Próba ich wykonania
 grozi wstrzymaniem działania wątku audio (ang. \textit{thread
 blocking}) i przerwaniem ciągłości dźwięku.
 
@@ -1138,7 +1140,7 @@ implementacyjne LV2, stanowiąc solidny fundament pod bezinwazyjną
 integrację alternatywnych formatów wtyczek w przyszłych iteracjach
 rozwoju systemu.
 
-\subsection{ChainSaver}
+\subsubsection{ChainSaver}
 Pomocnicza struktura odpowiedzialna za udostępnianie metod
 ułatwiających zapis i odczyt zapisanego stanu łańcucha efektów.
 
@@ -1184,7 +1186,8 @@ sieci obecność serwera kontrolnego jako dedykowanej usługi.
 Aplikacja mobilna rozpoczyna swoje działanie od przeszukiwania
 lokalnej sieci w celu znalezienia usługi o nazwie ściśle
 odpowiadającej konfiguracji zdefiniowanej w zmiennych środowiskowych
-(jeśli w pamięci jest już zapisany, krok skanowania jest pomijany).
+(jeśli w pamięci są już zapisane szczegóły usługi, krok skanowania
+jest pomijany).
 Zastosowanie takiego podejścia znacząco wpływa na prostotę
 użytkowania z perspektywy końcowego użytkownika. Pomimo automatyzacji
 tej części, użytkownik może manualnie wprowadzić adres lokalnego urządzenia.
@@ -1231,7 +1234,7 @@ poleceń w terminalu.
 \subsection{Dodawanie wtyczek}
 Po pomyślnym zakończeniu procesu nawiązywania połączenia z serwerem
 kontrolnym, użytkownikowi prezentowany jest główny interfejs
-aplikacji, zilustrowany na rysunku \ref{fig:main_screen_empty}. Ekran
+aplikacji, zilustrowany na Rysunku \ref{fig:main_screen_empty}. Ekran
 ten w przyszłości posłuży do wizualizacji aktywnego łańcucha efektów.
 
 \begin{figure}[H]
@@ -1362,7 +1365,7 @@ wprowadzić unikalną nazwę dla tworzonego zestawu ustawień (ang.
   \centering
   \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204349_Guitarian.jpg}
   \caption{Okno dialogowe tworzenia nowego zestawu ustawień
-  (presetu)[źródło własne]}
+  (\textit{preset})[źródło własne]}
   \label{fig:create_preset}
 \end{figure}
 
@@ -1381,7 +1384,7 @@ wcześniej zapisanych konfiguracji.
 \end{figure}
 
 Z poziomu omawianego panelu użytkownik może zainicjować proces
-ładowania wybranego presetu lub dokonać jego trwałego usunięcia.
+ładowania wybranego ustawienia lub dokonać jego trwałego usunięcia.
 Mechanizm aktualizacji już istniejącego zestawu jest bardzo prosty i
 sprowadza się do naniesienia pożądanych zmian w łańcuchu efektów, a
 następnie ponownego wywołania procedury zapisu. W oknie dialogowym
@@ -1509,8 +1512,12 @@ na płynną regulację parametrów wtyczek i możliwość oceny dokonanych
 zmian z bardzo małymi opóźnieniami. System posiada również szereg
 udogodnień takich jak możliwość tworzenia i zarządzania własnymi
 profilami brzmieniowymi czy łatwą konfigurację parametrów
-środowiskowych z poziomu smartfona. Z inżynieryjnego punktu widzenia
-projekt udowadnia skuteczność przyjętych założeń architektonicznych.
+środowiskowych z poziomu smartfona. W ramach projektu dostarczono
+również skrypty
+inicializacyjne, które pozwalają zainstalować system na fizycznym urządzeniu.
+
+Z inżynieryjnego punktu widzenia projekt udowadnia skuteczność
+przyjętych założeń architektonicznych.
 System charakteryzuje się wysoce wydajnym i stabilnym przetwarzaniem
 dźwięku oraz błyskawiczną, asynchroniczną komunikacją sieciową
 pomiędzy silnikiem audio a aplikacją kliencką. Co istotne, elastyczna
