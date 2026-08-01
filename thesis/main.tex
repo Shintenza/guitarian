@@ -15,7 +15,7 @@
 
 \usepackage{graphicx}
 \graphicspath{{figures/}}
-\usepackage[backend=biber,style=numeric]{biblatex}
+\usepackage[backend=biber,style=numeric,sorting=none]{biblatex}
 \addbibresource{bibliography.bib}
 
 \begin{document}
@@ -157,7 +157,8 @@ aby móc samodzielnie wybrzmieć na kolumnach głośnikowych. Do tego
 potrzebne jest zastosowanie wcześniej wspomnianego wzmacniacza, który
 jest urządzeniem, które w klasycznej postaci składa się z 3
 podstawowych komponentów: przedwzmacniacza, końcówki mocy i kolumny
-głośnikowej. Urządzenie to widoczne jest na Rysunku \ref{fig:amp}.
+głośnikowej\cite{roland_guitar_amp}. Urządzenie to widoczne jest na
+Rysunku \ref{fig:amp}.
 \begin{figure}[htbp]
   \centering
   \begin{minipage}{0.48\textwidth}
@@ -204,7 +205,8 @@ Klasyczny, sprzętowy efekt gitarowy to z reguły niewielkie urządzenie
 elektroniczne, którego głównym elementem jest analogowy lub cyfrowy
 układ przetwarzający. Zewnętrzny interfejs urządzenia składa się z
 gniazd wejściowych i wyjściowych oraz zestawu potencjometrów i
-przełączników, służących do konfiguracji parametrów jego pracy.
+przełączników, służących do konfiguracji parametrów jego
+pracy\cite{effect_unit_wikipedia}.
 Pojedyncze efekty są najczęściej łączone szeregowo, tworząc w ten
 sposób rozbudowany łańcuch przetwarzania sygnału, który z ang.
 powszechnie jest określany jako \textit{pedalboard} (Rysunek
@@ -235,9 +237,10 @@ gitarowych\cite{guitar_peadl_types}:
     \begin{enumerate}
       \item \textit{Chorus} -- efekt, który przyjmuje sygnał
         wejściowy, a następnie miksuje go z jedną lub kilkoma kopiami
-        tego sygnału opóźnionymi w czasie.
+        tego sygnału opóźnionymi w czasie\cite{chorus}.
       \item \textit{Tremolo} -- efekt polegający na okresowej zmianie
-        amplitudy sygnału, co przekłada się na jego regularne
+        amplitudy sygnału\cite{realization_of_guitar_audio_effects},
+        co przekłada się na jego regularne
         ściszanie i pogłaśnianie.
       \item \textit{Phaser} -- efekt, w którym sygnał jest
         rozdzielany na osobne ścieżki. Jedna z nich pozostaje
@@ -246,18 +249,18 @@ gitarowych\cite{guitar_peadl_types}:
         częstotliwości. W wyniku interferencji obu sygnałów powstają
         okresowe wzmocnienia i osłabienia wybranych zakresów
         częstotliwości, co nadaje brzmieniu charakterystyczny,
-        \textit{wirujący} i \textit{przestrzenny} charakter.
+        \textit{wirujący} i \textit{przestrzenny} charakter\cite{phaser}.
     \end{enumerate}
   \item \textbf{Efekty przestrzenne i czasowe}
     \begin{enumerate}
       \item \textit{Delay} -- zapisuje sygnał w buforze i odtwarza go
         po określonym czasie, często stosuje się również sprzężenie
         zwrotne, które powoduje serię coraz cichszych powtórzeń.
-        Działa podobnie do echa
+        Działa podobnie do echa\cite{realization_of_guitar_audio_effects}
       \item \textit{Reverb} -- również opiera się na opóźnionych
         kopiach sygnału, ale jest znacznie bardziej zaawansowany niż
         \textit{deleay}. Pozwala na symulowanie wybrzmiewania dźwięku
-        w różnych zamkniętych pomieszczeniach
+        w różnych zamkniętych pomieszczeniach\cite{reverb}.
     \end{enumerate}
   \item \textbf{Efekty filtrujące i modyfikujące częstotliwość}
     \begin{enumerate}
@@ -271,10 +274,10 @@ gitarowych\cite{guitar_peadl_types}:
     \begin{enumerate}
       \item \textit{Kompresor} -- zmniejsza rozpiętość dynamiczną
         przez ściszanie najgłośniejszych dźwięków i podbijanie
-        cichszych, co powoduje wyrównanie dźwięku i wydłużenie
+        cichszych\cite{compressor}, co powoduje wyrównanie dźwięku i wydłużenie
         wybrzmiewania struny (z ang. \textit{sustain})
       \item \textit{Bramka szumów} -- odcina sygnał wejściowy, gdy ten
-        spada poniżej ustalonego progu. Skuteczny w redukcji
+        spada poniżej ustalonego progu\cite{noise_gate}. Skuteczny w redukcji
         niepożądanych szumów i dźwięków w momencie, gdy muzyk nie gra
         na instrumencie
     \end{enumerate}
@@ -317,9 +320,11 @@ komunikacji pomiędzy obydwoma komponentami.
 
 \subsection{Standardy wtyczek audio}
 Współczesny rynek oprogramowania muzycznego charakteryzuje się
-mnogością formatów wtyczek audio. Najbardziej rozpowszechnionym z
+mnogością formatów wtyczek audio\cite{plugins_standards}. Najbardziej
+rozpowszechnionym z
 nich jest VST (ang. Virtual Studio Technology), opracowany przez
-niemiecką firmę \textit{Steinberg Media Technologies}. Choć format
+niemiecką firmę \textit{Steinberg Media
+Technologies}\cite{wikipedia_vst}. Choć format
 ten uznawany jest za niekwestionowany standard branżowy, jest to
 rozwiązanie własnościowe. Konkurencyjnym, lecz zamkniętym na jeden
 ekosystem standardem jest Audio Units (AU) firmy Apple, przeznaczony
@@ -893,7 +898,7 @@ obrazujący działanie silnika audio:
 \begin{figure}[h]
   \centering
   \includegraphics[width=1.0\textwidth]{engine_architecture.png}
-  \caption{Architektura silnika audio}
+  \caption{Architektura silnika audio[źródło własne]}
   \label{fig:engine_arch}
 \end{figure}
 
@@ -1234,14 +1239,15 @@ ten w przyszłości posłuży do wizualizacji aktywnego łańcucha efektów.
   \begin{minipage}[t]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{Screenshot_20260727_203348_Guitarian.jpg}
-    \caption{Główny ekran aplikacji}
+    \caption{Główny ekran aplikacji[źródło własne]}
     \label{fig:main_screen_empty}
   \end{minipage}
   \hfill
   \begin{minipage}[t]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{Screenshot_20260727_203505_Guitarian.jpg}
-    \caption{Widok dolnego panelu z biblioteką dostępnych efektów}
+    \caption{Widok dolnego panelu z biblioteką dostępnych
+    efektów[źródło własne]}
     \label{fig:plugins_library_sheet}
   \end{minipage}
 \end{figure}
@@ -1269,7 +1275,8 @@ Przykładowa trasa sygnału została zaprezentowana na Rysunku
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.5\textwidth]{Screenshot_20260727_203731_Guitarian.jpg}
-  \caption{Główny ekran z wizualną reprezentacją obecnego łańcucha efektów}
+  \caption{Główny ekran z wizualną reprezentacją obecnego łańcucha
+  efektów[źródło własne]}
   \label{fig:main_screen}
 \end{figure}
 
@@ -1283,7 +1290,7 @@ zaprezentowany na Rysunku \ref{fig:params_sheet}.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.5\textwidth]{Screenshot_20260727_203842_Guitarian.jpg}
-  \caption{Panel konfiguracji parametrów wtyczki}
+  \caption{Panel konfiguracji parametrów wtyczki[źródło własne]}
   \label{fig:params_sheet}
 \end{figure}
 
@@ -1314,7 +1321,7 @@ rysunku \ref{fig:card_drag}.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204053_Guitarian.jpg}
-  \caption{Zarządzanie położeniem wtyczki w łańcuchu efektów}
+  \caption{Zarządzanie położeniem wtyczki w łańcuchu efektów[źródło własne]}
   \label{fig:card_drag}
 \end{figure}
 
@@ -1332,7 +1339,8 @@ otwieranym przyciskiem trzech kropek menu widocznym na Rysunku
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204651_Guitarian.jpg}
-  \caption{Usuwanie wszystkich aktywnych wtyczek z łańcucha efektów}
+  \caption{Usuwanie wszystkich aktywnych wtyczek z łańcucha
+  efektów[źródło własne]}
   \label{fig:remove_all}
 \end{figure}
 
@@ -1353,7 +1361,8 @@ wprowadzić unikalną nazwę dla tworzonego zestawu ustawień (ang.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204349_Guitarian.jpg}
-  \caption{Okno dialogowe tworzenia nowego zestawu ustawień (presetu)}
+  \caption{Okno dialogowe tworzenia nowego zestawu ustawień
+  (presetu)[źródło własne]}
   \label{fig:create_preset}
 \end{figure}
 
@@ -1367,7 +1376,7 @@ wcześniej zapisanych konfiguracji.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204628_Guitarian.jpg}
-  \caption{Widok panelu z listą dostępnych zestawów ustawień}
+  \caption{Widok panelu z listą dostępnych zestawów ustawień[źródło własne]}
   \label{fig:presets_sheet}
 \end{figure}
 
@@ -1394,7 +1403,7 @@ zaprezentowany na rysunku \ref{fig:settings_screen}.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204839_Guitarian.jpg}
-  \caption{Ekran ustawień}
+  \caption{Ekran ustawień[źródło własne]}
   \label{fig:settings_screen}
 \end{figure}
 
@@ -1415,7 +1424,7 @@ dźwięk jednocześnie na kilka różnych portów wyjściowych.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204738_Guitarian.jpg}
-  \caption{Ekran ustawień - konfiguracja wejść i wyjść}
+  \caption{Ekran ustawień - konfiguracja wejść i wyjść[źródło własne]}
   \label{fig:settings_screen-in_out}
 \end{figure}
 
@@ -1438,14 +1447,14 @@ Rysunku \ref{fig:settings_screen-connection_edit}.
   \begin{minipage}[t]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{Screenshot_20260727_204750_Guitarian.jpg}
-    \caption{Ekran ustawień - status połączenia}
+    \caption{Ekran ustawień - status połączenia[źródło własne]}
     \label{fig:settings_screen-connection_status}
   \end{minipage}
   \hfill
   \begin{minipage}[t]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{Screenshot_20260727_204756_Guitarian.jpg}
-    \caption{Ekran ustawień - manualna konfiguracja połączenia}
+    \caption{Ekran ustawień - manualna konfiguracja połączenia[źródło własne]}
     \label{fig:settings_screen-connection_edit}
   \end{minipage}
 \end{figure}
@@ -1469,7 +1478,7 @@ Rysunku \ref{fig:settings_screen-delay}.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.5\textwidth]{Screenshot_20260727_204813_Guitarian.jpg}
-  \caption{Ekran ustawień - konfiguracja opóźnień}
+  \caption{Ekran ustawień - konfiguracja opóźnień[źródło własne]}
   \label{fig:settings_screen-delay}
 \end{figure}
 
