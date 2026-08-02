@@ -20,7 +20,8 @@ export type UseConnectionHandlerResult = {
 
 const useConnectionHandler = (): UseConnectionHandlerResult => {
   const { connection, hydrated, setConnection } = useConnectionStore();
-  const { disconnect, connect, connectAsync, socketState } = useWebsocket();
+  const { disconnect, connect, connectAsync, reset, socketState } =
+    useWebsocket();
   const { scan, service, status } = useConnectionScanner();
 
   const isScanningError =
@@ -47,6 +48,13 @@ const useConnectionHandler = (): UseConnectionHandlerResult => {
     },
     [connect, connection, scan],
   );
+
+  useEffect(() => {
+    if (isConnectionError) {
+      setConnection(null);
+      reset();
+    }
+  }, [isConnectionError, setConnection, reset]);
 
   useEffect(() => {
     if (!hydrated || isError || isConnected) {

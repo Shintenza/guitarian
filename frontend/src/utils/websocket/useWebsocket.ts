@@ -42,6 +42,8 @@ const useWebsocket = () => {
 
   const disconnect = useCallback(() => webSocketClient.disconnect(), []);
 
+  const reset = useCallback(() => webSocketClient.reset(), []);
+
   const sendMessage = useCallback(
     (msg: SocketMessage) => webSocketClient.sendMessage(msg),
     [],
@@ -57,7 +59,7 @@ const useWebsocket = () => {
     };
   }, []);
 
-  return { socketState, connect, connectAsync, disconnect, sendMessage };
+  return { socketState, connect, connectAsync, disconnect, reset, sendMessage };
 };
 
 export default useWebsocket;

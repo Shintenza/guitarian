@@ -123,17 +123,21 @@ class WebSocketClient {
   }
 
   public disconnect() {
-    this.isIntentionalDisconnect = true;
-
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
     }
 
     if (this.ws) {
+      this.isIntentionalDisconnect = true;
       this.ws.close();
     } else {
       this.updateState(SocketConnectionState.Disconnected);
     }
+  }
+
+  public reset() {
+    this.disconnect();
+    this.reconnectAttempts = 0;
   }
 
   public sendMessage(message: SocketMessage): void {
