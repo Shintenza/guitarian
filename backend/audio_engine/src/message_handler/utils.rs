@@ -1,18 +1,26 @@
+use bincode::decode_from_slice;
 use shared::commands::{RequestCommandResponse, RequestError, StateChangeEvent};
+use::bincode::Decode;
 
 use tokio::sync::mpsc::Sender;
+use zeromq::{ZmqError, ZmqMessage};
 
 use crate::plugin_manager::types::ChainOperationError;
 
-#[macro_export]
-macro_rules! decode_msg {
-  ($msg:expr) => {{
-    let raw_msg = $msg.unwrap();
-    let payload = raw_msg.get(0).unwrap();
-    let (decoded, _size) =
-      bincode::decode_from_slice(payload, bincode::config::standard()).unwrap();
-    decoded
-  }};
+pub enum DecodeError {
+    Zmq,
+    MissingPayload,
+    InvalidPayload,
+}
+
+pub fn decode_msg<T: Decode<()>>(
+    msg: Result<ZmqMessage, ZmqError>, 
+) -> Result<T, DecodeError> {
+    let raw_msg = msg.map_err(|_|DecodeError::Zmq)?;
+    let payload = raw_msg.get(0).ok_or(DecodeError::MissingPayload)?;
+    let (decoded, _size) = decode_from_slice(payload, bincode::config::standard()).map_err(|_|DecodeError::InvalidPayload)?;
+
+    Ok(decoded)
 }
 
 pub fn chain_error_to_request_error(plugin_error: ChainOperationError) -> RequestError {

@@ -14,14 +14,15 @@ use tokio::{
   task,
 };
 use tokio_util::sync::CancellationToken;
-use zeromq::{PubSocket, PullSocket, RepSocket, Socket, SocketRecv, SocketSend};
+use zeromq::{
+  PubSocket, PullSocket, RepSocket, Socket, SocketRecv, SocketSend, ZmqError, ZmqMessage,
+};
 
 use crate::{
-  decode_msg,
   jack_client::client::AudioEngine,
   message_handler::{
     message_handler_controller::MessageHandlerController,
-    utils::{chain_error_to_request_error, process_action},
+    utils::{chain_error_to_request_error, decode_msg, process_action},
   },
   plugin_manager::manager::PluginManager,
   utils::ports::{PortType, extract_unique_ports},
@@ -49,138 +50,150 @@ impl MessageHandler {
   async fn handle_requests(
     &mut self,
     socket: &mut RepSocket,
-    request: RequestCommand,
+    message: Result<ZmqMessage, ZmqError>,
     tx_pub: &Sender<StateChangeEvent>,
   ) {
-    let response: Result<RequestCommandResponse, RequestError> = match request {
-      RequestCommand::GetCurrentState => Ok(RequestCommandResponse::CurrentState(
-        self.plugin_manager.get_current_chain_state(),
-      )),
-      RequestCommand::GetAvailablePlugins(query) => Ok(RequestCommandResponse::AvailablePlugins(
-        self.plugin_manager.get_plugins(query),
-      )),
-      RequestCommand::GetAvailableAudioDevices => {
-        /*this is a perspective of JACK, meaning physical inputs are **outputting** signal that can be
-         * consumed by output devices that have audio **input** ports
-         */
-        let (inputs, outputs) = self.audio_engine.get_audio_devices();
-        Ok(RequestCommandResponse::AvaialbleAudioDevices(
-          AvailableAudioDevices {
-            input_ports: outputs,
-            output_devices: inputs,
-          },
-        ))
-      }
-      RequestCommand::GetCurrentEngineConfig => {
-        let config = self.audio_engine.get_client_config();
-        Ok(CurrentEngineConfig(config))
-      }
-      RequestCommand::GetCurrentConnectionsState => {
-        let state = self
-          .audio_engine
-          .get_current_connections_state()
-          .unwrap_or_default();
-
-        let device_oriented_state = AudioConnections {
-          input: state.connected_to_input,
-          outputs: extract_unique_ports(
-            state
-              .connected_to_output_l
-              .iter()
-              .cloned()
-              .collect::<Vec<_>>(),
-            PortType::Input,
-          ),
-        };
-        Ok(CurrentConnectionsState(device_oriented_state))
-      }
-      RequestCommand::LoadPreset(id, preset) => {
-        process_action(
-          tx_pub,
-          self.plugin_manager.load_preset(preset),
-          RequestCommandResponse::CurrentState,
-          chain_error_to_request_error,
-          Some(StateChangeEvent::PresetLoaded { preset_id: id }),
-        )
-        .await
-      }
-      RequestCommand::UnloadPlugin(id) => {
-        process_action(
-          tx_pub,
-          self.plugin_manager.unload_plugin(id),
-          |_| RequestCommandResponse::UnloadPlugin,
-          chain_error_to_request_error,
-          Some(StateChangeEvent::PluginUnloaded { plugin_id: id }),
-        )
-        .await
-      }
-      RequestCommand::ChangePluginPosition(plugin_id, new_position) => {
-        process_action(
-          tx_pub,
-          self
-            .plugin_manager
-            .change_plugin_position(plugin_id, new_position),
-          |_| RequestCommandResponse::ChangePluginPosition,
-          chain_error_to_request_error,
-          Some(StateChangeEvent::PluginPositionChanged {
-            plugin_id,
-            new_position,
-          }),
-        )
-        .await
-      }
-      RequestCommand::RemoveAll => {
-        process_action(
-          tx_pub,
-          self.plugin_manager.clear(),
-          |_| RequestCommandResponse::RemoveAll,
-          chain_error_to_request_error,
-          Some(StateChangeEvent::Cleared),
-        )
-        .await
-      }
-      RequestCommand::LoadPlugin(plugin_uri, position) => {
-        process_action(
-          tx_pub,
-          self.plugin_manager.load_plugin(position, &plugin_uri),
-          RequestCommandResponse::LoadedPlugin,
-          chain_error_to_request_error,
-          Some(StateChangeEvent::PluginLoaded {
-            plugin_uri,
-            position,
-          }),
-        )
-        .await
-      }
-      RequestCommand::ConnectPorts(audio_device_input, audio_device_outputs) => {
-        process_action(
-          tx_pub,
-          self
+    let decoded = decode_msg(message);
+    let response: Result<RequestCommandResponse, RequestError> = match decoded {
+      Err(_) => Err(RequestError::NotFound),
+      Ok(request) => match request {
+        RequestCommand::GetCurrentState => Ok(RequestCommandResponse::CurrentState(
+          self.plugin_manager.get_current_chain_state(),
+        )),
+        RequestCommand::GetAvailablePlugins(query) => Ok(RequestCommandResponse::AvailablePlugins(
+          self.plugin_manager.get_plugins(query),
+        )),
+        RequestCommand::GetAvailableAudioDevices => {
+          /* this is a perspective of JACK, meaning physical inputs are **outputting** signal that can be
+           * consumed by output devices that have audio **input** ports
+           */
+          let (inputs, outputs) = self.audio_engine.get_audio_devices();
+          Ok(RequestCommandResponse::AvaialbleAudioDevices(
+            AvailableAudioDevices {
+              input_ports: outputs,
+              output_devices: inputs,
+            },
+          ))
+        }
+        RequestCommand::GetCurrentEngineConfig => {
+          let config = self.audio_engine.get_client_config();
+          Ok(CurrentEngineConfig(config))
+        }
+        RequestCommand::GetCurrentConnectionsState => {
+          let state = self
             .audio_engine
-            .set_audio_connections(audio_device_input, audio_device_outputs),
-          |_| RequestCommandResponse::ConnectedPorts,
-          |_| RequestError::InternalError,
-          Some(StateChangeEvent::ConnectionsChanged),
-        )
-        .await
-      }
-      RequestCommand::SetBufferSize(buffer_size) => {
-        process_action(
-          tx_pub,
-          self.audio_engine.set_buffer_size(buffer_size),
-          |_| RequestCommandResponse::BufferSizeChanged,
-          |_| RequestError::InternalError,
-          Some(StateChangeEvent::BufferSizeChanged { buffer_size }),
-        )
-        .await
-      }
+            .get_current_connections_state()
+            .unwrap_or_default();
+
+          let device_oriented_state = AudioConnections {
+            input: state.connected_to_input,
+            outputs: extract_unique_ports(
+              state
+                .connected_to_output_l
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>(),
+              PortType::Input,
+            ),
+          };
+          Ok(CurrentConnectionsState(device_oriented_state))
+        }
+        RequestCommand::LoadPreset(id, preset) => {
+          process_action(
+            tx_pub,
+            self.plugin_manager.load_preset(preset),
+            RequestCommandResponse::CurrentState,
+            chain_error_to_request_error,
+            Some(StateChangeEvent::PresetLoaded { preset_id: id }),
+          )
+          .await
+        }
+        RequestCommand::UnloadPlugin(id) => {
+          process_action(
+            tx_pub,
+            self.plugin_manager.unload_plugin(id),
+            |_| RequestCommandResponse::UnloadPlugin,
+            chain_error_to_request_error,
+            Some(StateChangeEvent::PluginUnloaded { plugin_id: id }),
+          )
+          .await
+        }
+        RequestCommand::ChangePluginPosition(plugin_id, new_position) => {
+          process_action(
+            tx_pub,
+            self
+              .plugin_manager
+              .change_plugin_position(plugin_id, new_position),
+            |_| RequestCommandResponse::ChangePluginPosition,
+            chain_error_to_request_error,
+            Some(StateChangeEvent::PluginPositionChanged {
+              plugin_id,
+              new_position,
+            }),
+          )
+          .await
+        }
+        RequestCommand::RemoveAll => {
+          process_action(
+            tx_pub,
+            self.plugin_manager.clear(),
+            |_| RequestCommandResponse::RemoveAll,
+            chain_error_to_request_error,
+            Some(StateChangeEvent::Cleared),
+          )
+          .await
+        }
+        RequestCommand::LoadPlugin(plugin_uri, position) => {
+          process_action(
+            tx_pub,
+            self.plugin_manager.load_plugin(position, &plugin_uri),
+            RequestCommandResponse::LoadedPlugin,
+            chain_error_to_request_error,
+            Some(StateChangeEvent::PluginLoaded {
+              plugin_uri,
+              position,
+            }),
+          )
+          .await
+        }
+        RequestCommand::ConnectPorts(audio_device_input, audio_device_outputs) => {
+          process_action(
+            tx_pub,
+            self
+              .audio_engine
+              .set_audio_connections(audio_device_input, audio_device_outputs),
+            |_| RequestCommandResponse::ConnectedPorts,
+            |_| RequestError::InternalError,
+            Some(StateChangeEvent::ConnectionsChanged),
+          )
+          .await
+        }
+        RequestCommand::SetBufferSize(buffer_size) => {
+          process_action(
+            tx_pub,
+            self.audio_engine.set_buffer_size(buffer_size),
+            |_| RequestCommandResponse::BufferSizeChanged,
+            |_| RequestError::InternalError,
+            Some(StateChangeEvent::BufferSizeChanged { buffer_size }),
+          )
+          .await
+        }
+      },
     };
 
     let encoded = encode_to_vec(response, config::standard()).unwrap();
     socket.send(encoded.into()).await.ok();
   }
 
-  async fn handle_messages(&self, command: PushCommand, tx_pub: &Sender<StateChangeEvent>) {
+  async fn handle_messages(
+    &self,
+    message: Result<ZmqMessage, ZmqError>,
+    tx_pub: &Sender<StateChangeEvent>,
+  ) {
+    let Ok(command) = decode_msg(message) else {
+      return;
+    };
+
     match command {
       PushCommand::SetParam(plugin_id, port_id, new_value) => {
         self
@@ -238,12 +251,10 @@ impl MessageHandler {
     loop {
       tokio::select! {
         rep_msg = rep_socket.recv() => {
-          let decoded: RequestCommand = decode_msg!(rep_msg);
-          self.handle_requests(&mut rep_socket, decoded, &tx_pub).await;
+          self.handle_requests(&mut rep_socket, rep_msg, &tx_pub).await;
         }
         pull_msg = pull_socket.recv()  => {
-          let decoded: PushCommand = decode_msg!(pull_msg);
-          self.handle_messages(decoded, &tx_pub).await;
+          self.handle_messages(pull_msg, &tx_pub).await;
         }
         _ = self.cancel_token.cancelled() => {
           break;
