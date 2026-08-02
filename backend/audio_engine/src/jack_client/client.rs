@@ -1,6 +1,6 @@
 use anyhow::Result;
 use jack::{AsyncClient, AudioIn, AudioOut, Client, ClientOptions, PortFlags};
-use ringbuf::HeapCons;
+use ringbuf::{HeapCons, HeapProd};
 use shared::data::{BufferSize, EngineConfig};
 use std::env;
 
@@ -11,7 +11,7 @@ use crate::jack_client::types::{ConnectionsState, EnginePortsNames};
 use crate::jack_client::utils::{
   apply_port_changes, calculate_port_diff, sync_engine_settings_with_client,
 };
-use crate::plugin_manager::types::AudioCommand;
+use crate::plugin_manager::types::{AudioCommand, PluginGarbage};
 use crate::utils::ports::{PortType, extract_unique_ports};
 
 pub struct AudioEngine {
@@ -26,7 +26,7 @@ const OUTPUT_NAME_LEFT: &str = "out_L";
 const OUTPUT_NAME_RIGHT: &str = "out_R";
 
 impl AudioEngine {
-  pub fn new(consumer: HeapCons<AudioCommand>) -> Self {
+  pub fn new(consumer: HeapCons<AudioCommand>, garbage_producer: HeapProd<PluginGarbage>) -> Self {
     let name =
       env::var("JACK_CLIENT_NAME").unwrap_or_else(|_| DEFAULT_NAME_SERVER_NAME.to_string());
     let (client, _status) = Client::new(&name, ClientOptions::default()).unwrap();
@@ -53,6 +53,7 @@ impl AudioEngine {
       audio_out_l,
       audio_out_r,
       consumer,
+      garbage_producer,
       client.buffer_size() as usize,
     );
 

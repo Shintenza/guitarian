@@ -1,31 +1,39 @@
 use std::sync::atomic::Ordering;
 
-use ringbuf::HeapProd;
+use ringbuf::{HeapCons, HeapProd};
 use shared::data::{ChainItem, ControlState, PluginMetadata, PluginQuery, PresetItem};
 
 use crate::plugin_manager::chain_saver::ChainSaver;
 use crate::plugin_manager::plugin_chain::PluginChain;
+use crate::plugin_manager::plugin_reaper::PluginReaper;
 use crate::plugin_manager::plugin_repository::{LV2PluginRepository, PluginRepository};
 use crate::plugin_manager::types::{
-  AudioCommand, ChainOperationError, InitializedPlugin, InstanceConfig,
+  AudioCommand, ChainOperationError, InitializedPlugin, InstanceConfig, PluginGarbage,
 };
 
 pub struct PluginManager {
   lv2_repository: LV2PluginRepository,
   plugin_chain: PluginChain,
   chain_saver: ChainSaver,
+  _reaper: PluginReaper,
 }
 
 impl PluginManager {
-  pub fn new(sample_rate: u32, producer: HeapProd<AudioCommand>) -> Self {
+  pub fn new(
+    sample_rate: u32,
+    producer: HeapProd<AudioCommand>,
+    garbage_consumer: HeapCons<PluginGarbage>,
+  ) -> Self {
     let lv2_repository = LV2PluginRepository::new(sample_rate);
     let plugin_chain = PluginChain::new(producer);
     let chain_saver = ChainSaver::new();
+    let _reaper = PluginReaper::new(garbage_consumer);
 
     let mut manager = PluginManager {
       lv2_repository,
       plugin_chain,
       chain_saver,
+      _reaper,
     };
 
     if let Some(dump) = ChainSaver::load_preset_from_disk() {

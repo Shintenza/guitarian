@@ -28,6 +28,11 @@ pub struct PluginInstanceWithId {
   pub instance: Box<dyn PluginInstance>,
 }
 
+pub enum PluginGarbage {
+  One(PluginInstanceWithId),
+  Many(Vec<PluginInstanceWithId>),
+}
+
 pub enum ChainOperationError {
   NotFound,
   InvalidArguments,
