@@ -1,7 +1,7 @@
 services::user_systemctl() {
   local username="$1"
   shift
-  runuser -l "$username" -c "XDG_RUNTIME_DIR=/run/user/\$(id -u) systemctl --user $*"
+  runuser -l -s /bin/bash "$username" -c "XDG_RUNTIME_DIR=/run/user/\$(id -u) systemctl --user $*"
 }
 
 services::install() {
