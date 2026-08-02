@@ -121,7 +121,7 @@ impl PluginChain {
     port.value.store(new_value, Ordering::Relaxed);
   }
 
-  pub fn load_preset(&mut self, preset: Vec<InitializedPlugin>) -> Vec<InstanceConfig> {
+  pub fn load_preset(&mut self, preset: Vec<InitializedPlugin>) -> Result<Vec<InstanceConfig>, ChainOperationError> {
     let (i_config, i_id): (Vec<InstanceConfig>, Vec<PluginInstanceWithId>) = preset
       .into_iter()
       .enumerate()
@@ -146,7 +146,7 @@ impl PluginChain {
 
     let command = AudioCommand::LoadPreset(i_id);
 
-    self.producer.try_push(command);
-    i_config
+    self.producer.try_push(command).map_err(|_|ChainOperationError::QueueError)?;
+    Ok(i_config)
   }
 }

@@ -150,7 +150,7 @@ impl PluginManager {
       })
     }
 
-    let load_result = self.plugin_chain.load_preset(initialized_plugins);
+    let load_result = self.plugin_chain.load_preset(initialized_plugins)?;
     let chain_items = load_result
       .into_iter()
       .map(|item| self.instance_config_to_chain_item(item))
