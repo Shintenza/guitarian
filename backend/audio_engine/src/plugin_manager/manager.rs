@@ -107,7 +107,7 @@ impl PluginManager {
       .get_initialized_plugin(uri)
       .ok_or(ChainOperationError::NotFound)?;
 
-    let result = self.plugin_chain.add_plugin(position, initialized_plugin);
+    let result = self.plugin_chain.add_plugin(position, initialized_plugin)?;
     self.trigger_save();
     Ok(self.instance_config_to_chain_item(result))
   }

@@ -42,27 +42,27 @@ impl PluginChain {
     }
   }
 
-  pub fn add_plugin(&mut self, index: usize, mut plugin: InitializedPlugin) -> InstanceConfig {
+  pub fn add_plugin(&mut self, index: usize, mut plugin: InitializedPlugin) -> Result<InstanceConfig, ChainOperationError> {
     let instance_config = PluginChain::get_plugin_instance_config(&plugin, self.plugin_id);
-    // TODO handle negative values
     let safe_index = index.min(self.chain.len());
+
     plugin
       .instance
       .set_port_values_source(instance_config.state.clone());
 
     let command = AudioCommand::AddPlugin(
-      index,
+      safe_index,
       PluginInstanceWithId {
         id: self.plugin_id,
         instance: plugin.instance,
       },
     );
 
-    self.producer.try_push(command);
+    self.producer.try_push(command).map_err(|_| ChainOperationError::QueueError)?;
     self.chain.insert(safe_index, instance_config.clone());
     self.plugin_id += 1;
 
-    instance_config
+    Ok(instance_config)
   }
 
   pub fn remove_plugin(&mut self, plugin_id: u32) -> Result<(), ChainOperationError> {
