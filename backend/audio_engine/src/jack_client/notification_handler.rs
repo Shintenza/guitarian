@@ -1,16 +1,14 @@
-use std::sync::{Arc, RwLock};
-
 use jack::{Client, Control, Port, Unowned};
 
 use crate::jack_client::{engine_settings::EngineSettings, types::EnginePortsNames};
 
 pub struct NotificationHandler {
-  engine_settings: Arc<RwLock<EngineSettings>>,
+  engine_settings: EngineSettings,
   port_names: EnginePortsNames,
 }
 
 impl NotificationHandler {
-  pub fn new(port_names: EnginePortsNames, engine_settings: Arc<RwLock<EngineSettings>>) -> Self {
+  pub fn new(port_names: EnginePortsNames, engine_settings: EngineSettings) -> Self {
     Self {
       port_names,
       engine_settings,
@@ -41,52 +39,51 @@ impl jack::NotificationHandler for NotificationHandler {
       return;
     }
 
-    if let Some(mut locked_settings) = self.engine_settings.write().ok() {
+    self.engine_settings.mutate(|settings| {
       let mut update_set = |our_port: &Port<Unowned>, other_port: &Port<Unowned>| {
         let our_name = our_port.name().unwrap_or_default();
         let other_name = other_port.name().unwrap_or_default();
 
         if our_name == self.port_names.input {
           if are_connected {
-            locked_settings.connections_state.connected_to_input = Some(other_name);
+            settings.connections_state.connected_to_input = Some(other_name);
           } else {
-            locked_settings.connections_state.connected_to_input = None
+            settings.connections_state.connected_to_input = None
           }
         } else if our_name == self.port_names.output_l {
           if are_connected {
-            locked_settings
+            settings
               .connections_state
               .connected_to_output_l
               .insert(other_name);
           } else {
-            locked_settings
+            settings
               .connections_state
               .connected_to_output_l
               .remove(&other_name);
           }
         } else if our_name == self.port_names.output_r {
           if are_connected {
-            locked_settings
+            settings
               .connections_state
               .connected_to_output_r
               .insert(other_name);
           } else {
-            locked_settings
+            settings
               .connections_state
               .connected_to_output_r
               .remove(&other_name);
           }
         }
       };
+
       if is_a_ours {
-        update_set(&port_a, &port_b)
+        update_set(&port_a, &port_b);
       }
       if is_b_ours {
         update_set(&port_b, &port_a);
       }
-
-      let _ = locked_settings.save();
-    }
+    });
   }
 
   fn xrun(&mut self, _: &Client) -> Control {

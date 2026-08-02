@@ -4,7 +4,7 @@ use anyhow::Result;
 use jack::{Client, Error};
 use shared::data::BufferSize;
 
-use crate::jack_client::{engine_settings::EngineSettings, types::EnginePortsNames};
+use crate::jack_client::{engine_settings::EngineSettingsData, types::EnginePortsNames};
 
 pub fn calculate_port_diff(
   current: &HashSet<String>,
@@ -43,7 +43,7 @@ pub fn apply_port_changes(
 }
 
 pub fn sync_engine_settings_with_client(
-  engine_settings: &mut EngineSettings,
+  engine_settings: &mut EngineSettingsData,
   client: &Client,
   engine_ports: &EnginePortsNames,
 ) {
