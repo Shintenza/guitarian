@@ -6,12 +6,18 @@ export type HomeScreenSheetProps = {
   ref: Ref<TrueSheet>;
   children: ReactNode;
   onWillDismiss?: TrueSheet["onWillDismiss"];
+  onDidPresent?: TrueSheet["onDidPresent"];
+  onDetentChange?: TrueSheet["onDetentChange"];
+  onPositionChange?: TrueSheet["onPositionChange"];
 };
 
 export const HomeScreenSheet = ({
   ref,
   children,
   onWillDismiss,
+  onDidPresent,
+  onDetentChange,
+  onPositionChange,
 }: HomeScreenSheetProps) => {
   const { theme } = useUnistyles();
 
@@ -22,6 +28,9 @@ export const HomeScreenSheet = ({
       scrollable
       backgroundColor={theme.colors.background.secondary}
       onWillDismiss={onWillDismiss}
+      onDidPresent={onDidPresent}
+      onDetentChange={onDetentChange}
+      onPositionChange={onPositionChange}
     >
       {children}
     </TrueSheet>

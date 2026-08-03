@@ -51,7 +51,6 @@ const AudioDevicesSettings = () => {
         description: "Select the device you connected your guitar to",
         control,
         name: "inputDevicePort",
-        zIndex: 2,
         data: availableConnections?.inputPorts.map((item) => ({
           value: item,
           label: item,
@@ -61,7 +60,6 @@ const AudioDevicesSettings = () => {
         title: "Audio output",
         description: "Select one ore more output devices",
         name: "outputDevices",
-        zIndex: 1,
         data: availableConnections?.outputDevices.map((item) => ({
           value: item,
           label: item,
@@ -109,7 +107,6 @@ const AudioDevicesSettings = () => {
                 data={section.data ?? []}
                 name={section.name as Path<ConnectPortsRequest>}
                 control={control}
-                zIndex={section.zIndex}
                 multiple={section.multiple}
                 rules={{ required: "Select a device" }}
               />

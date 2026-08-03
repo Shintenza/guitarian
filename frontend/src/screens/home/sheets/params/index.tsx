@@ -1,5 +1,12 @@
-import { TrueSheet } from "@lodev09/react-native-true-sheet";
+import { SheetPositionContext } from "@/contexts/SheetPositionContext";
+import {
+  DetentChangeEvent,
+  DidPresentEvent,
+  PositionChangeEvent,
+  TrueSheet,
+} from "@lodev09/react-native-true-sheet";
 import { Ref, useImperativeHandle, useRef, useState } from "react";
+import { useSharedValue } from "react-native-reanimated";
 import { HomeScreenSheet } from "../shared";
 import PluginParamsEditor from "./components/PluginParamsEditor";
 import useChainPlugin from "./hooks/useChainPlugin";
@@ -18,6 +25,7 @@ const ParamsSheet = ({ ref }: ParamsSheetProps) => {
   const { plugin } = useChainPlugin(activePluginId);
 
   const sheetRef = useRef<TrueSheet>(null);
+  const sheetTopPosition = useSharedValue(0);
 
   useImperativeHandle(ref, () => ({
     open: (pluginId) => {
@@ -33,8 +41,19 @@ const ParamsSheet = ({ ref }: ParamsSheetProps) => {
     <HomeScreenSheet
       ref={sheetRef}
       onWillDismiss={() => setActivePluginId(null)}
+      onDidPresent={(e: DidPresentEvent) => {
+        sheetTopPosition.value = e.nativeEvent.position;
+      }}
+      onDetentChange={(e: DetentChangeEvent) => {
+        sheetTopPosition.value = e.nativeEvent.position;
+      }}
+      onPositionChange={(e: PositionChangeEvent) => {
+        sheetTopPosition.value = e.nativeEvent.position;
+      }}
     >
-      {plugin && <PluginParamsEditor plugin={plugin} />}
+      <SheetPositionContext.Provider value={sheetTopPosition}>
+        {plugin && <PluginParamsEditor plugin={plugin} />}
+      </SheetPositionContext.Provider>
     </HomeScreenSheet>
   );
 };

@@ -1,3 +1,4 @@
+import { useSheetTopPosition } from "@/contexts/SheetPositionContext";
 import { ControlType } from "@/types/plugins";
 import { DropdownMenu, Slider, Switch, Text } from "@/ui/components";
 import { View } from "react-native";
@@ -21,6 +22,8 @@ const ParamControl = ({ controlId, pluginId }: ParamControlProps) => {
     pluginId,
     controlId,
   });
+  const sheetTopPosition = useSheetTopPosition();
+
   return (
     <View style={styles.container({ type })}>
       <Text>{name}</Text>
@@ -35,7 +38,7 @@ const ParamControl = ({ controlId, pluginId }: ParamControlProps) => {
       )}
       {type === "Enumeration" && (
         <DropdownMenu
-          zIndex={1000 - controlId}
+          screenOffset={sheetTopPosition ?? undefined}
           data={scalePoints}
           value={value!}
           onChange={setValue}

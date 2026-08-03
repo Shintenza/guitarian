@@ -32,6 +32,7 @@ module.exports = defineConfig([
     },
     rules: {
       ...reactHooksPlugin.configs.recommended.rules,
+      "react-hooks/immutability": "off",
     },
   },
   reactPlugin.configs.flat["jsx-runtime"],
