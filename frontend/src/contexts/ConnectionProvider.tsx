@@ -2,6 +2,7 @@ import useAutoRefetchQueries from "@/utils/api/useAutoRefetchQueries";
 import useConnectionHandler, {
   UseConnectionHandlerResult,
 } from "@/utils/api/useConnectionHandler";
+import useStateChangeListener from "@/utils/api/useStateChangeListener";
 import { createContext, ReactNode, useContext } from "react";
 
 type ConnectionContextType = UseConnectionHandlerResult;
@@ -18,6 +19,7 @@ export const useConnection = () => {
 const ConnectionProvider = ({ children }: { children: ReactNode }) => {
   const connectionHanlder = useConnectionHandler();
   useAutoRefetchQueries({ isConnected: connectionHanlder.isConnected });
+  useStateChangeListener();
 
   return (
     <ConnectionContext.Provider value={connectionHanlder}>

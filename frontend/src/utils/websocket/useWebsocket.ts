@@ -2,7 +2,11 @@ import { ConnectionConfig } from "@/stores/connection";
 import { useCallback, useEffect, useState } from "react";
 import { connectionConfigToWsAddress } from "../url";
 import { webSocketClient } from "./WebSocketClient";
-import { SocketConnectionState, SocketMessage } from "./types";
+import {
+  SocketConnectionState,
+  SocketMessage,
+  WebSocketListener,
+} from "./types";
 
 type ConnectOptions = {
   resetAttempts?: boolean;
@@ -49,6 +53,11 @@ const useWebsocket = () => {
     [],
   );
 
+  const subscribe = useCallback(
+    (listener: WebSocketListener) => webSocketClient.subscribe(listener),
+    [],
+  );
+
   useEffect(() => {
     const unsubscribeConnection = webSocketClient.subscribeConnection((state) =>
       setSocketState(state),
@@ -59,7 +68,15 @@ const useWebsocket = () => {
     };
   }, []);
 
-  return { socketState, connect, connectAsync, disconnect, reset, sendMessage };
+  return {
+    socketState,
+    connect,
+    connectAsync,
+    disconnect,
+    reset,
+    sendMessage,
+    subscribe,
+  };
 };
 
 export default useWebsocket;
